@@ -14,8 +14,6 @@
 #include <sky_types.h>
 #include <sky_util.h>
 
-#include "../../external/bsdlib/bsd-strlcpy.c"
-
 /* str -- string to be trimmed
  slen -- lenght of str
  end -- output of end pos
@@ -62,7 +60,7 @@ int32_t trimc(char *dest, int32_t destlen, char *str, int32_t slen) {
     if (destlen < slen)
         return -1;
 
-    strlcpy(dest, &str[start], destlen);
+    strncpy(dest, &str[start], destlen);
     return end - start;
 }
 
@@ -256,7 +254,7 @@ uint16_t calc_checksum(uint8_t *buff, int32_t buff_len) {
     return chcks;
 }
 
-int32_t hostname_to_ip(char * hostname, char* ip, uint8_t ip_len) {
+int32_t hostname_to_ip(char * hostname, char* ip, uint16_t ip_len) {
     struct hostent *he;
     struct in_addr **addr_list;
     int32_t i;
@@ -271,7 +269,7 @@ int32_t hostname_to_ip(char * hostname, char* ip, uint8_t ip_len) {
 
     for (i = 0; addr_list[i] != NULL; i++) {
         //Return the first one;
-        strlcpy(ip, inet_ntoa(*addr_list[i]), ip_len);
+        strncpy(ip, inet_ntoa(*addr_list[i]), ip_len);
         return 0;
     }
 

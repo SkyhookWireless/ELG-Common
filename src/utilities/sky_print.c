@@ -13,6 +13,50 @@
 #include "sky_util.h"
 #include "sky_print.h"
 
+void print_location_rq(struct location_resp_t* cr) {
+    puts("LOCATION_RQ");
+    printf("latitude: %f\n", cr->location.lat);
+    printf("longitude: %f\n", cr->location.lon);
+    printf("hpe: %f\n", cr->location.hpe);
+}
+
+void print_location_rq_addr(struct location_resp_t* cr) {
+    puts("LOCATION_RQ_ADDR");
+    printf("distance_to_point: %f\n", cr->location_ex.distance_to_point);
+    printf("street num: ");
+    print_s(cr->location_ex.street_num, cr->location_ex.street_num_len);
+    printf("address: ");
+    print_s(cr->location_ex.address, cr->location_ex.address_len);
+    printf("city: ");
+    print_s(cr->location_ex.city, cr->location_ex.city_len);
+    printf("state: ");
+    print_s(cr->location_ex.state, cr->location_ex.state_len);
+    printf("state code: ");
+    print_s(cr->location_ex.state_code, cr->location_ex.state_code_len);
+    printf("postal code: ");
+    print_s(cr->location_ex.postal_code, cr->location_ex.postal_code_len);
+    printf("county: ");
+    print_s(cr->location_ex.county, cr->location_ex.county_len);
+    printf("country: ");
+    print_s(cr->location_ex.country, cr->location_ex.country_len);
+    printf("country code: ");
+    print_s(cr->location_ex.country_code, cr->location_ex.country_code_len);
+    printf("metro1: ");
+    print_s(cr->location_ex.metro1, cr->location_ex.metro1_len);
+    printf("metro2: ");
+    print_s(cr->location_ex.metro2, cr->location_ex.metro2_len);
+    printf("ip: ");
+    {
+        uint8_t zero_12[12];
+        memset(zero_12, 0, sizeof(zero_12));
+        if (memcmp(cr->location_ex.ip_addr + 4, zero_12, sizeof(zero_12)) == 0)
+            cr->location_ex.ip_type = DATA_TYPE_IPV4;
+        else
+            cr->location_ex.ip_type = DATA_TYPE_IPV6;
+    }
+    print_ip(cr->location_ex.ip_addr, cr->location_ex.ip_type);
+}
+
 void print_location_resp(struct location_resp_t *cr) {
     int32_t i;
     printf("\n");
@@ -29,6 +73,15 @@ void print_location_resp(struct location_resp_t *cr) {
     switch (cr->payload_type) {
     case LOCATION_RQ_SUCCESS:
         puts("LOCATION_RQ_SUCCESS");
+        print_location_rq(cr);
+        break;
+    case LOCATION_RQ_ADDR_SUCCESS:
+        puts("LOCATION_RQ_SUCCESS");
+        print_location_rq(cr);
+        print_location_rq_addr(cr);
+        break;
+    case PROBE_REQUEST_SUCCESS:
+        puts("PROBE_REQUEST");
         break;
     case LOCATION_API_ERROR:
         puts("PAYLOAD_API_ERROR");
@@ -39,88 +92,6 @@ void print_location_resp(struct location_resp_t *cr) {
     case LOCATION_RQ_ERROR:
         puts("LOCATION_RQ_ERROR");
         break;
-    case PROBE_REQUEST:
-        puts("PROBE_REQUEST");
-        break;
-    case DECODE_BIN_FAILED:
-        puts("DECODE_BIN_FAILED");
-        break;
-    case ENCODE_BIN_FAILED:
-        puts("ENCODE_BIN_FAILED");
-        break;
-    case DECRYPT_BIN_FAILED:
-        puts("DECRYPT_BIN_FAILED");
-        break;
-    case ENCRYPT_BIN_FAILED:
-        puts("ENCRYPT_BIN_FAILED");
-        break;
-    case ENCODE_XML_FAILED:
-        puts("ENCODE_XML_FAILED");
-        break;
-    case DECODE_XML_FAILED:
-        puts("DECODE_XML_FAILED");
-        break;
-    case SOCKET_OPEN_FAILED:
-        puts("SOCKET_FAILED ");
-        break;
-    case SOCKET_WRITE_FAILED:
-        puts("SOCKET_WRITE_FAILED");
-        break;
-    case SOCKET_READ_FAILED:
-        puts("SOCKET_READ_FAILED");
-        break;
-    case SOCKET_TIMEOUT_FAILED:
-        puts("SOCKET_TIMEOUT_FAILED");
-        break;
-    case CREATE_META_FAILED:
-        puts("CREATE_META_FAILED");
-        break;
-    }
-
-    if (cr->payload_type != LOCATION_RQ
-            && cr->payload_type != LOCATION_RQ_ADDR)
-        return;
-
-    puts("LOCATION_RQ");
-    printf("latitude: %f\n", cr->location.lat);
-    printf("longitude: %f\n", cr->location.lon);
-    printf("hpe: %f\n", cr->location.hpe);
-
-    if (cr->payload_type == LOCATION_RQ_ADDR) {
-        puts("LOCATION_RQ_ADDR");
-        printf("distance_to_point: %f\n", cr->location_ex.distance_to_point);
-        printf("street num: ");
-        print_s(cr->location_ex.street_num, cr->location_ex.street_num_len);
-        printf("address: ");
-        print_s(cr->location_ex.address, cr->location_ex.address_len);
-        printf("city: ");
-        print_s(cr->location_ex.city, cr->location_ex.city_len);
-        printf("state: ");
-        print_s(cr->location_ex.state, cr->location_ex.state_len);
-        printf("state code: ");
-        print_s(cr->location_ex.state_code, cr->location_ex.state_code_len);
-        printf("postal code: ");
-        print_s(cr->location_ex.postal_code, cr->location_ex.postal_code_len);
-        printf("county: ");
-        print_s(cr->location_ex.county, cr->location_ex.county_len);
-        printf("country: ");
-        print_s(cr->location_ex.country, cr->location_ex.country_len);
-        printf("country code: ");
-        print_s(cr->location_ex.country_code, cr->location_ex.country_code_len);
-        printf("metro1: ");
-        print_s(cr->location_ex.metro1, cr->location_ex.metro1_len);
-        printf("metro2: ");
-        print_s(cr->location_ex.metro2, cr->location_ex.metro2_len);
-        printf("ip: ");
-        {
-            uint8_t zero_12[12];
-            memset(zero_12, 0, sizeof(zero_12));
-            if (memcmp(cr->location_ex.ip_addr + 4, zero_12, sizeof(zero_12)) == 0)
-                cr->location_ex.ip_type = DATA_TYPE_IPV4;
-            else
-                cr->location_ex.ip_type = DATA_TYPE_IPV6;
-        }
-        print_ip(cr->location_ex.ip_addr, cr->location_ex.ip_type);
     }
 }
 

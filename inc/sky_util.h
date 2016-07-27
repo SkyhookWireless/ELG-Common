@@ -39,7 +39,7 @@ void print_s(char *buff, int32_t len);
 void print_ip(uint8_t *ip, uint8_t ip_type);
 uint16_t calc_checksum(uint8_t *buff, int32_t buff_len);
 
-int32_t hostname_to_ip(char * hostname, char* ip, uint8_t ip_len);
+int32_t hostname_to_ip(char * hostname, char* ip, uint16_t ip_len);
 
 #endif
 

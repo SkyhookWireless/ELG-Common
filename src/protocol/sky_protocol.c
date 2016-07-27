@@ -14,7 +14,6 @@
 #include <sky_types.h>
 #include <sky_util.h>
 #include <stdbool.h>
-#include "sky_keys.hpp"
 
 // Return the number to add to become a multiple of 16.
 inline

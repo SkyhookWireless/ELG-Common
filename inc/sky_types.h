@@ -52,17 +52,26 @@ enum SKY_DATA_TYPE {
     DATA_TYPE_MAC,          // device MAC address
 };
 
-// stored in one byte
-enum SKY_PAYLOAD_TYPE {
+/* request payload types */
+enum SKY_REQ_PAYLOAD_TYPE {
+    REQ_PAYLOAD_TYPE_NONE = 0,  // initialization value
 
-    /* request payload types */
-    LOCATION_RQ = 0,        // location request
-    LOCATION_RQ_ADDR,       // location request full
-    PROBE_REQUEST,
+    LOCATION_RQ,                // location request
+    LOCATION_RQ_ADDR,           // location request full
+    PROBE_REQUEST,              // probe test
+};
 
-    /* response payload types */
-    LOCATION_RQ_SUCCESS = 100,
-    LOCATION_RQ_ERROR,
+/* response payload types */
+enum SKY_RSP_PAYLOAD_TYPE {
+    RSP_PAYLOAD_TYPE_NONE = 0,  // initialization value
+
+    /* success code */
+    LOCATION_RQ_SUCCESS,
+    LOCATION_RQ_ADDR_SUCCESS,
+    PROBE_REQUEST_SUCCESS,
+
+    /* error code */
+    LOCATION_RQ_ERROR = 100,
     LOCATION_GATEWAY_ERROR,
     LOCATION_API_ERROR,
 };
