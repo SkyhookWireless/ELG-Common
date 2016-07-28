@@ -271,6 +271,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_re
         return -1;
 
     sky_payload_ex payload_ex;
+    memset(&payload_ex, 0, sizeof(payload_ex));
     payload_ex.payload.sw_version = cresp->version;
     memcpy(payload_ex.payload.mac, cresp->MAC, sizeof(payload_ex.payload.mac));
     memcpy(payload_ex.payload.ipv6, cresp->location_ex.ip_addr, sizeof(payload_ex.payload.ipv6));
@@ -449,6 +450,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_req
         return -1;
 
     sky_payload_ex payload_ex;
+    memset(&payload_ex, 0, sizeof(payload_ex));
     payload_ex.payload.sw_version = creq->version; // client firmware version
     memcpy(payload_ex.payload.mac, creq->MAC, sizeof(payload_ex.payload.mac));
     memcpy(payload_ex.payload.ipv6, creq->ip_addr, sizeof(payload_ex.payload.ipv6));
@@ -533,6 +535,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     if (!sky_verify_checksum(buff, buff_len, header.payload_length))
         return -1;
     sky_payload_ex payload_ex;
+    memset(&payload_ex, 0, sizeof(payload_ex));
     if (!sky_get_payload(buff, buff_len, &payload_ex, header.payload_length))
         return -1;
 

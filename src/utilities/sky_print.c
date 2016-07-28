@@ -59,8 +59,11 @@ void print_location_rq_addr(struct location_resp_t* cr) {
 
 void print_location_resp(struct location_resp_t *cr) {
     int32_t i;
+    uint64_t timestamp = 0;
+    uint8_t * p_timestamp = (uint8_t *)&timestamp;
+    memcpy(p_timestamp + 2, cr->timestamp, sizeof(cr->timestamp));
     printf("\n");
-    printf("timestamp: %lu\n", cr->timestamp);
+    printf("timestamp: %lu\n", timestamp);
     printf("protocol: %d\n", cr->protocol);
     printf("server version: %d\n", cr->version);
     printf("payload type no: %d\n", cr->payload_type);
@@ -81,13 +84,13 @@ void print_location_resp(struct location_resp_t *cr) {
         print_location_rq_addr(cr);
         break;
     case PROBE_REQUEST_SUCCESS:
-        puts("PROBE_REQUEST");
+        puts("PROBE_REQUEST_SUCCESS");
         break;
     case LOCATION_API_ERROR:
-        puts("PAYLOAD_API_ERROR");
+        puts("LOCATION_API_ERROR");
         break;
     case LOCATION_GATEWAY_ERROR:
-        puts("SERVER_ERROR");
+        puts("LOCATION_GATEWAY_ERROR");
         break;
     case LOCATION_RQ_ERROR:
         puts("LOCATION_RQ_ERROR");

@@ -271,7 +271,7 @@ struct location_req_t {
     uint8_t ip_addr[16];
 
     /* timestamp */
-    uint64_t timestamp; // in ms
+    uint8_t timestamp[6]; // in ms
 
     /* wifi access points */
     uint8_t ap_count;
@@ -322,7 +322,7 @@ struct location_resp_t {
     uint8_t payload_type;
 
     /* timestamp */
-    uint64_t timestamp; // in ms
+    uint8_t timestamp[6]; // in ms
 
     /* location result */
     struct location_t location;
