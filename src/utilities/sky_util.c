@@ -11,7 +11,7 @@
 #include <time.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <sky_types.h>
+#include <sky_protocol.h>
 #include <sky_util.h>
 
 /* str -- string to be trimmed
@@ -136,7 +136,7 @@ uint64_t get_timestamp_ms() {
     return ts * 1000 + now.tv_usec / 1000;
 }
 
-int32_t get_http_timestamp(char *tbuf, size_t tbuf_len) {
+int32_t get_http_timestamp(char *tbuf, uint32_t tbuf_len) {
     time_t now = time(0);
     struct tm tm = *gmtime(&now);
 

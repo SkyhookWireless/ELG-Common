@@ -12,7 +12,7 @@ extern "C" {
 #ifndef SKY_CRYPT_H
 #define SKY_CRYPT_H
 
-#include "sky_types.h"
+#include "sky_protocol.h"
 
 /* generate initialization vector */
 void sky_gen_iv(uint8_t *iv);

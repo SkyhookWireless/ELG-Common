@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include "sky_types.h"
+#include "sky_protocol.h"
 #include "sky_util.h"
 #include "sky_print.h"
 
