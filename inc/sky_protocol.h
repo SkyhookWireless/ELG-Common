@@ -45,7 +45,7 @@ typedef struct sky_protocol_data_entry {
 typedef struct sky_protocol_data_entry_ex {
     sky_entry * entry;         // entry without data
     uint8_t * data;            // array size = sizeof(data type) * count
-} sky_entry_ex;
+} sky_entry_ext;
 
 typedef struct sky_protocol_packet_payload {
     uint8_t sw_version;         // client sw version for request and server sw version for response
@@ -58,8 +58,8 @@ typedef struct sky_protocol_packet_payload {
 
 typedef struct sky_protocol_packet_payload_ex {
     sky_payload payload;        // payload without data entries
-    sky_entry_ex data_entry;    // data_entry is updated to iterate over an unbounded array of data entries in buffer
-} sky_payload_ex;
+    sky_entry_ext data_entry;   // data_entry is updated to iterate over an unbounded array of data entries in buffer
+} sky_payload_ext;
 
 typedef uint16_t sky_checksum;
 

@@ -15,13 +15,6 @@ extern "C" {
 #include <inttypes.h>
 #include <netinet/in.h>
 
-// server error
-#define SERVER_ERR 0xFF
-
-// server cannot handle more than preset process limit using http error code numbers for simplicity
-#define SERVICE_UNAVAILABLE_503 {SERVER_ERR, 0xF7, 0x01}
-#define PROTOCOL_NOT_ACCEPTABLE_406 {SERVER_ERR, 0x96, 0x01}
-
 // stored in one byte
 enum SKY_DATA_TYPE {
     DATA_TYPE_PAD = 0,      // padding byte
@@ -76,7 +69,7 @@ enum SKY_RSP_PAYLOAD_TYPE {
     LOCATION_API_ERROR,
 };
 
-// error codes
+// internal error codes
 enum STATUS {
     OK = 0,
     ZLOG_INIT_PERM,
@@ -100,7 +93,7 @@ enum STATUS {
     SEND_PROBE_FAILED,
     SEND_UDF_PROT_FAILED,
     SENDTO_FAILED,
-    DECRYPT_BIN_FAILED = 211,
+    DECRYPT_BIN_FAILED,
     ENCODE_XML_FAILED,
     DECODE_BIN_FAILED,
     ENCODE_BIN_FAILED,
@@ -108,8 +101,8 @@ enum STATUS {
     DECODE_XML_FAILED,
     CREATE_META_FAILED,
 
-    /* HTTP response codes */
-    /*http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html */
+    /* HTTP response codes >= 100 */
+    /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html */
 };
 
 /* response relay settings and tracking */
