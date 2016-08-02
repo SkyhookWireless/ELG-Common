@@ -13,14 +13,14 @@
 #include "sky_util.h"
 #include "sky_print.h"
 
-void print_location_rq(struct location_resp_t* cr) {
+void print_location_rq(struct location_rsp_t* cr) {
     puts("LOCATION_RQ");
     printf("latitude: %f\n", cr->location.lat);
     printf("longitude: %f\n", cr->location.lon);
     printf("hpe: %f\n", cr->location.hpe);
 }
 
-void print_location_rq_addr(struct location_resp_t* cr) {
+void print_location_rq_addr(struct location_rsp_t* cr) {
     puts("LOCATION_RQ_ADDR");
     printf("distance_to_point: %f\n", cr->location_ex.distance_to_point);
     printf("street num: ");
@@ -57,7 +57,7 @@ void print_location_rq_addr(struct location_resp_t* cr) {
     print_ip(cr->location_ex.ip_addr, cr->location_ex.ip_type);
 }
 
-void print_location_resp(struct location_resp_t *cr) {
+void print_location_resp(struct location_rsp_t *cr) {
     int32_t i;
     uint64_t timestamp = 0;
     uint8_t * p_timestamp = (uint8_t *)&timestamp;
@@ -98,7 +98,7 @@ void print_location_resp(struct location_resp_t *cr) {
     }
 }
 
-void print_location_req(struct location_req_t *cr) {
+void print_location_req(struct location_rq_t *cr) {
     int32_t i, j;
 
     printf("protocol: %d\n", cr->protocol);

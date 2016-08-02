@@ -17,9 +17,24 @@ extern "C" {
 
 #define SKY_PROTOCOL_VERSION    1
 
-#define SERVER_ERR              0xFF
+#define IV_OFFSET_1             8
 
-#define IV_OFFSET_1    8
+#define MAX_AP                  100
+#define MAX_GPS                 2
+#define MAX_CELL                5
+#define MAX_BLE                 5
+
+#define SKY_PROT_RQ_BUFF_LEN \
+    sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum) \
+    + MAX_AP * (sizeof(sky_entry_t) + sizeof(struct ap_t)) \
+    + MAX_GPS * (sizeof(sky_entry_t) + sizeof(struct gps_t)) \
+    + MAX_CELL * (sizeof(sky_entry_t) + sizeof(union cell_t)) \
+    + MAX_BLE * (sizeof(sky_entry_t) + sizeof(struct ble_t))
+
+#define SKY_PROT_RSP_BUFF_LEN \
+    sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum) \
+    + sizeof(struct location_t) + sizeof(struct location_ext_t) \
+    + 1024 // the char array of full address
 
 #ifndef ENOBUFS
 #define ENOBUFS (ENOMEM)
@@ -37,7 +52,7 @@ enum SKY_DATA_TYPE {
     DATA_TYPE_LTE,          // cell lte
     DATA_TYPE_BLE,          // bluetooth
 
-    DATA_TYPE_BASIC,        // lat and lon
+    DATA_TYPE_LAT_LON,      // lat and lon
     DATA_TYPE_STREET_NUM,
     DATA_TYPE_ADDRESS,
     DATA_TYPE_CITY,
@@ -57,7 +72,7 @@ enum SKY_DATA_TYPE {
 };
 
 /* request payload types */
-enum SKY_REQ_PAYLOAD_TYPE {
+enum SKY_RQ_PAYLOAD_TYPE {
     REQ_PAYLOAD_TYPE_NONE = 0,  // initialization value
 
     LOCATION_RQ,                // location request
@@ -116,29 +131,40 @@ enum STATUS {
     /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html */
 };
 
+//
+// protocol header, payload and checksum data types
+//
+
 // Note: For multi-byte integers, the server code runs on little-endian machines.
 //       As the protocol requires little-endianness, server code does not need to
 //       concern about byte ordering.
-typedef struct sky_protocol_packet_header {
+typedef struct {
     uint8_t version;           // protocol version
     uint8_t unused;            // padding byte
     uint16_t payload_length;   // payload length
     uint32_t user_id;          // user id
     uint8_t iv[16];            // initialization vector
-} sky_header_t;
+} sky_rq_header_t;
 
-typedef struct sky_protocol_data_entry {
+typedef struct {
+    uint8_t version;           // protocol version
+    uint8_t unused;            // padding byte
+    uint16_t payload_length;   // payload length
+    uint8_t iv[16];            // initialization vector
+} sky_rsp_header_t;
+
+typedef struct {
     uint8_t data_type;         // data type enum (i.e. SkyDataType)
     uint8_t data_type_count;   // data type count
 } sky_entry_t;
 
 // read and write in place in buffer
-typedef struct sky_protocol_data_entry_ex {
+typedef struct {
     sky_entry_t * entry;       // entry without data
     uint8_t * data;            // array size = sizeof(data type) * count
 } sky_entry_ext_t;
 
-typedef struct sky_protocol_packet_payload {
+typedef struct {
     uint8_t sw_version;        // client sw version for request and server sw version for response
     uint8_t mac[6];            // client device MAC address
     uint8_t type;              // payload type
@@ -147,30 +173,17 @@ typedef struct sky_protocol_packet_payload {
     uint8_t timestamp[8];      // timestamp in milliseconds
 } sky_payload_t;
 
-typedef struct sky_protocol_packet_payload_ex {
+typedef struct {
     sky_payload_t payload;     // payload without data entries
     sky_entry_ext_t data_entry;// data_entry is updated to iterate over an unbounded array of data entries in buffer
 } sky_payload_ext_t;
 
 typedef uint16_t sky_checksum;
 
-
-/* response relay settings and tracking */
-struct relay_t {
-    struct sockaddr_in host;
-    uint8_t valid;
-// runtime data
-//int fail_count; // count of fw failiures (increment on each failiure decrement failure count every second)
-//uint64_t timestamp; // in ms, last successful send
-};
-
-/* stores keys in a binary tree */
-struct aes_key_t {
-    uint32_t userid;
-    uint8_t aes_key[16]; // 128 bit aes key
-    char keyid[128]; // api key
-    struct relay_t relay; // relay responses
-};
+//
+// protocol payload data entry data types
+// location request
+//
 
 /* WARNING
  it is important to keep the order
@@ -178,9 +191,10 @@ struct aes_key_t {
  because the compiler pads the struct to align
  to the largest size */
 
-/* access point struct */
-struct ap_t // 7
-{
+// access point
+// Note: Padding bytes will be appended at the end of the very last "struct ap_t",
+//       if the memory boundary of the end is not aligned at 32-bits.
+struct ap_t {
     uint8_t MAC[6];
     int8_t rssi;
 };
@@ -193,16 +207,18 @@ struct gsm_t {
     uint16_t mnc;
     uint16_t lac;
     int8_t rssi; // -255 unkonwn - map it to - 128
+    uint8_t unused; // padding byte
 };
 
 struct cdma_t {
-    uint32_t age;
     double lat;
     double lon;
+    uint32_t age;
     uint16_t sid;
     uint16_t nid;
     uint16_t bsid;
     int8_t rssi;
+    uint8_t unused; // padding byte
 };
 
 struct umts_t {
@@ -212,6 +228,7 @@ struct umts_t {
     uint16_t mnc;
     uint16_t lac;
     int8_t rssi;
+    uint8_t unused; // padding byte
 };
 
 struct lte_t {
@@ -220,10 +237,17 @@ struct lte_t {
     uint16_t mcc;
     uint16_t mnc;
     int8_t rssi;
+    uint8_t unused[3]; // padding bytes
 };
 
-struct gps_t // 38
-{
+union cell_t {
+    struct gsm_t gsm;
+    struct cdma_t cdma;
+    struct umts_t umts;
+    struct lte_t lte;
+};
+
+struct gps_t {
     double lat;
     double lon;
     float alt; // altitude
@@ -234,6 +258,7 @@ struct gps_t // 38
     uint8_t fix;
 };
 
+// blue tooth
 struct ble_t {
     uint16_t major;
     uint16_t minor;
@@ -242,17 +267,19 @@ struct ble_t {
     int8_t rssi;
 };
 
-/* location result struct */
-// define indicates struct size
-// that could vary between 32 vs 64 bit systems
-#define LOCATION_T_SIZE 20
+//
+// protocol payload data entry data types
+// location response
+//
+
+// location result
 struct location_t {
     double lat;
     double lon;
     float hpe;
 };
 
-/* extended location data */
+// extended location result
 struct location_ext_t {
     float distance_to_point;
 
@@ -293,10 +320,28 @@ struct location_ext_t {
     char *country_code;
 };
 
-struct location_req_t {
+//
+// client application data types
+//
+
+// relay setting for echoing the location results
+struct relay_t {
+    struct sockaddr_in host;
+    uint8_t valid;
+};
+
+// stores keys in a binary tree
+struct sky_key_t {
+    uint32_t userid;
+    uint8_t aes_key[16];  // 128 bit aes key
+    char keyid[128];      // api key
+    struct relay_t relay; // relay responses
+};
+
+struct location_rq_t {
 
     /* user key */
-    struct aes_key_t key;
+    struct sky_key_t key;
 
     /* protocol version number */
     uint8_t protocol;
@@ -329,6 +374,7 @@ struct location_req_t {
     uint8_t cell_count;
     uint8_t cell_type; // SKY_DATA_TYPE
 
+    union cell_t cell; // gsm, cdma, lte and umts
 // TODO use a union for cell types
     struct gsm_t *gsm;
     struct cdma_t *cdma;
@@ -347,10 +393,10 @@ struct location_req_t {
     char *api_version;
 };
 
-struct location_resp_t {
+struct location_rsp_t {
 
     /* user key */
-    struct aes_key_t key;
+    struct sky_key_t key;
 
     /* protocol version number */
     uint8_t protocol;
@@ -471,24 +517,24 @@ uint32_t sky_get_userid(uint8_t *buff, int32_t buff_len);
 // received by the server from the client
 // decode binary data from client, result is in the location_req_t struct
 int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_req_t *creq);
+        struct location_rq_t *creq);
 
 // sent by the server to the client
 // encodes the loc struct into binary formatted packet sent to client
 // returns the packet len or -1 when fails
 int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len,
-        struct location_resp_t *cresp);
+        struct location_rsp_t *cresp);
 
 // sent by the client to the server
 /* encodes the request struct into binary formatted packet */
 // returns the packet len or -1 when fails
 int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len,
-        struct location_req_t *creq);
+        struct location_rq_t *creq);
 
 // received by the client from the server
 /* decodes the binary data and the result is in the location_resp_t struct */
 int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_resp_t *cresp);
+        struct location_rsp_t *cresp);
 
 #endif
 

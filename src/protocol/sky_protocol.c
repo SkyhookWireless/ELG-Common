@@ -36,12 +36,12 @@ bool adjust_data_entry(const uint8_t * buff, uint32_t buff_len, uint32_t offset,
 
 // Return header by parameter "header & h".
 inline
-bool sky_get_header(const uint8_t * buff, uint32_t buff_len, sky_header_t * p_header) {
-    if (buff_len < sizeof(sky_header_t)) {
+bool sky_get_header(const uint8_t * buff, uint32_t buff_len, sky_rq_header_t * p_header) {
+    if (buff_len < sizeof(sky_rq_header_t)) {
         perror("buffer too small");
         return false;
     }
-    memcpy(p_header, buff, sizeof(sky_header_t));
+    memcpy(p_header, buff, sizeof(sky_rq_header_t));
     return true;
 }
 
@@ -49,25 +49,25 @@ bool sky_get_header(const uint8_t * buff, uint32_t buff_len, sky_header_t * p_he
 // Note: payload_ex.data_entry is a pointer referring to an address in buffer.
 inline
 bool sky_get_payload(const uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_header_t) + payload_length) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length) {
         perror("buffer too small");
         return false;
     }
-    memcpy(&p_payload_ex->payload, buff + sizeof(sky_header_t), sizeof(sky_payload_t));
+    memcpy(&p_payload_ex->payload, buff + sizeof(sky_rq_header_t), sizeof(sky_payload_t));
     // initialize payload_ex.data_entry
-    adjust_data_entry(buff, buff_len, sizeof(sky_header_t) + sizeof(sky_payload_t), &p_payload_ex->data_entry);
+    adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + sizeof(sky_payload_t), &p_payload_ex->data_entry);
     return true;
 }
 
 // Verify checksum.
 inline
 bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_header_t) + payload_length + sizeof(sky_checksum)) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum cs = *(sky_checksum *)(buff + sizeof(sky_header_t) + payload_length); // little endianness
-    if (cs == fletcher16(buff, sizeof(sky_header_t) + payload_length))
+    sky_checksum cs = *(sky_checksum *)(buff + sizeof(sky_rq_header_t) + payload_length); // little endianness
+    if (cs == fletcher16(buff, sizeof(sky_rq_header_t) + payload_length))
         return 1;
     else {
         perror("invalid checksum");
@@ -77,12 +77,12 @@ bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint16_t paylo
 
 // Set header in parameter "uint8_t * buff".
 inline
-bool sky_set_header(uint8_t * buff, uint32_t buff_len, const sky_header_t * p_header) {
-    if (buff_len < sizeof(sky_header_t)) {
+bool sky_set_header(uint8_t * buff, uint32_t buff_len, const sky_rq_header_t * p_header) {
+    if (buff_len < sizeof(sky_rq_header_t)) {
         perror("buffer too small");
         return false;
     }
-    memcpy(buff, p_header, sizeof(sky_header_t));
+    memcpy(buff, p_header, sizeof(sky_rq_header_t));
     return true;
 }
 
@@ -91,32 +91,32 @@ bool sky_set_header(uint8_t * buff, uint32_t buff_len, const sky_header_t * p_he
 // by using "payload_ex.data_entry".
 inline
 bool sky_set_payload(uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_header_t) + payload_length) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length) {
         perror("buffer too small");
         return false;
     }
-    memcpy(buff + sizeof(sky_header_t), &p_payload_ex->payload, sizeof(sky_payload_t));
+    memcpy(buff + sizeof(sky_rq_header_t), &p_payload_ex->payload, sizeof(sky_payload_t));
     // initialize payload_ex.data_entry
-    adjust_data_entry(buff, buff_len, sizeof(sky_header_t) + sizeof(sky_payload_t), &p_payload_ex->data_entry);
+    adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + sizeof(sky_payload_t), &p_payload_ex->data_entry);
     return true;
 }
 
 // Set checksum in parameter "uint8_t * buff".
 inline
 bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_header_t) + payload_length + sizeof(sky_checksum)) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum cs = fletcher16(buff, sizeof(sky_header_t) + payload_length);
-    *(sky_checksum *)(buff + sizeof(sky_header_t) + payload_length) = cs; // little endianness
+    sky_checksum cs = fletcher16(buff, sizeof(sky_rq_header_t) + payload_length);
+    *(sky_checksum *)(buff + sizeof(sky_rq_header_t) + payload_length) = cs; // little endianness
     return true;
 }
 
 // find aes key  based on userid in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
 uint32_t sky_get_userid(uint8_t *buff, int32_t buff_len) {
-    sky_header_t header;
+    sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
     if (sky_get_header(buff, buff_len, &header)) {
         return header.user_id;
@@ -128,9 +128,9 @@ uint32_t sky_get_userid(uint8_t *buff, int32_t buff_len) {
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
 int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_req_t *creq) {
+        struct location_rq_t *creq) {
 
-    sky_header_t header;
+    sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
     if (!sky_get_header(buff, buff_len, &header))
         return -1;
@@ -214,7 +214,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
             return -1;
         }
         payload_offset += sizeof(sky_entry_t) + sz;
-        adjust_data_entry(buff, buff_len, sizeof(sky_header_t) + payload_offset, p_entry_ex);
+        adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + payload_offset, p_entry_ex);
     }
     return 0;
 }
@@ -222,7 +222,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 // sent by the server to the client
 /* encodes the loc struct into binary formatted packet sent to client */
 // returns the packet len or -1 when fails
-int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_resp_t *cresp) {
+int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rsp_t *cresp) {
 
     uint32_t payload_length = sizeof(sky_payload_t);
 
@@ -261,7 +261,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_re
     // Note that buffer contains the legacy date for location request,
     // so some fields (e.g. user id) are correct already.
     // update fields in buffer
-    sky_header_t header;
+    sky_rq_header_t header;
     header.version = cresp->protocol;
     header.payload_length = payload_length;
     header.user_id = cresp->key.userid;
@@ -283,7 +283,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_re
     if (cresp->payload_type == LOCATION_RQ) {
         // add basic location: latitude and longitude
         sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
-        p_entry_ex->entry->data_type = DATA_TYPE_BASIC;
+        p_entry_ex->entry->data_type = DATA_TYPE_LAT_LON;
         p_entry_ex->entry->data_type_count = sizeof(cresp->location);
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
@@ -292,7 +292,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_re
 
         // add basic location: latitude and longitude
         sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
-        p_entry_ex->entry->data_type = DATA_TYPE_BASIC;
+        p_entry_ex->entry->data_type = DATA_TYPE_LAT_LON;
         p_entry_ex->entry->data_type_count = sizeof(cresp->location);
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
@@ -382,19 +382,19 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_re
 
     // fill in padding bytes
     if (pad_len > 0) {
-        uint8_t * pad_bytes = buff + sizeof(sky_header_t) + header.payload_length - pad_len;
+        uint8_t * pad_bytes = buff + sizeof(sky_rq_header_t) + header.payload_length - pad_len;
         memset(pad_bytes, DATA_TYPE_PAD, pad_len);
     }
 
     sky_set_checksum(buff, buff_len, header.payload_length);
 
-    return sizeof(sky_header_t) + header.payload_length + sizeof(sky_checksum);
+    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum);
 }
 
 // sent by the client to the server
 /* encodes the request struct into binary formatted packet sent to server */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_req_t *creq) {
+int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
     if (creq->payload_type != LOCATION_RQ
             && creq->payload_type != LOCATION_RQ_ADDR) {
@@ -439,7 +439,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_req
     uint8_t pad_len = pad_16(payload_length);
     payload_length += pad_len;
 
-    sky_header_t header;
+    sky_rq_header_t header;
     header.version = creq->protocol;
     header.payload_length = payload_length;
     header.user_id = creq->key.userid;
@@ -519,15 +519,15 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_req
     if (!sky_set_checksum(buff, buff_len, header.payload_length))
         return -1;
 
-    return sizeof(sky_header_t) + header.payload_length + sizeof(sky_checksum);
+    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum);
 }
 
 // received by the client from the server
 /* decodes the binary data and the result is in the location_resp_t struct */
 int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_resp_t *cresp) {
+        struct location_rsp_t *cresp) {
 
-    sky_header_t header;
+    sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
     if (!sky_get_header(buff, buff_len, &header))
         return -1;
@@ -549,7 +549,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     if (cresp->payload_type == LOCATION_RQ) {
         // get basic location (i.e. latitude and longitude) from buffer
         sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
-        if (p_entry_ex->entry->data_type == DATA_TYPE_BASIC) {
+        if (p_entry_ex->entry->data_type == DATA_TYPE_LAT_LON) {
             memcpy(&cresp->location, p_entry_ex->data, p_entry_ex->entry->data_type_count);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
@@ -561,7 +561,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         uint32_t payload_offset = sizeof(sky_payload_t);
         while (payload_offset < header.payload_length) {
             switch (p_entry_ex->entry->data_type) {
-            case DATA_TYPE_BASIC:
+            case DATA_TYPE_LAT_LON:
                 memcpy(&cresp->location, p_entry_ex->data, p_entry_ex->entry->data_type_count);
                 break;
             case DATA_TYPE_STREET_NUM:
@@ -626,7 +626,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
                 return -1;
             }
             payload_offset += sizeof(sky_entry_t) + p_entry_ex->entry->data_type_count;
-            adjust_data_entry(buff, buff_len, sizeof(sky_header_t) + payload_offset, p_entry_ex);
+            adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + payload_offset, p_entry_ex);
         }
     }
     return 0;
