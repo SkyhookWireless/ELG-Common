@@ -62,11 +62,11 @@ bool sky_get_payload(const uint8_t * buff, uint32_t buff_len, sky_payload_ext_t 
 // Verify checksum.
 inline
 bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum)) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum_t)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum cs = *(sky_checksum *)(buff + sizeof(sky_rq_header_t) + payload_length); // little endianness
+    sky_checksum_t cs = *(sky_checksum_t *)(buff + sizeof(sky_rq_header_t) + payload_length); // little endianness
     if (cs == fletcher16(buff, sizeof(sky_rq_header_t) + payload_length))
         return 1;
     else {
@@ -104,12 +104,12 @@ bool sky_set_payload(uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_pa
 // Set checksum in parameter "uint8_t * buff".
 inline
 bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum)) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum_t)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum cs = fletcher16(buff, sizeof(sky_rq_header_t) + payload_length);
-    *(sky_checksum *)(buff + sizeof(sky_rq_header_t) + payload_length) = cs; // little endianness
+    sky_checksum_t cs = fletcher16(buff, sizeof(sky_rq_header_t) + payload_length);
+    *(sky_checksum_t *)(buff + sizeof(sky_rq_header_t) + payload_length) = cs; // little endianness
     return true;
 }
 
@@ -142,9 +142,9 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         return -1;
 
     /* binary protocol description in sky_protocol.h */
-    creq->protocol = header.version; // protocol version
+    creq->protocol_version = header.version; // protocol version
     creq->key.userid = header.user_id;
-    creq->version = payload_ex.payload.sw_version; // client software version
+    creq->sw_version = payload_ex.payload.sw_version; // client software version
     memcpy(creq->MAC, payload_ex.payload.mac, sizeof(creq->MAC)); // device mac address
     memcpy(creq->ip_addr, payload_ex.payload.ipv6, sizeof(creq->ip_addr));
     creq->payload_type = payload_ex.payload.type;
@@ -164,48 +164,41 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case DATA_TYPE_AP:
             creq->ap_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct ap_t) * p_entry_ex->entry->data_type_count;
-            creq->aps = (struct ap_t *)malloc(sz);
-            memcpy(creq->aps, p_entry_ex->data, sz);
+            creq->aps = (struct ap_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_BLE:
             creq->ble_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct ble_t) * p_entry_ex->entry->data_type_count;
-            creq->bles = (struct ble_t *)malloc(sz);
-            memcpy(creq->bles, p_entry_ex->data, sz);
+            creq->bles = (struct ble_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_GSM:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_GSM;
             sz = sizeof(struct gsm_t) * p_entry_ex->entry->data_type_count;
-            creq->gsm = (struct gsm_t *)malloc(sz);
-            memcpy(creq->gsm, p_entry_ex->data, sz);
+            creq->gsm = (struct gsm_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_CDMA:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_CDMA;
             sz = sizeof(struct cdma_t) * p_entry_ex->entry->data_type_count;
-            creq->cdma = (struct cdma_t *)malloc(sz);
-            memcpy(creq->cdma, p_entry_ex->data, sz);
+            creq->cdma = (struct cdma_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_UMTS:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_UMTS;
             sz = sizeof(struct umts_t) * p_entry_ex->entry->data_type_count;
-            creq->umts = (struct umts_t *)malloc(sz);
-            memcpy(creq->umts, p_entry_ex->data, sz);
+            creq->umts = (struct umts_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_LTE:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_LTE;
             sz = sizeof(struct lte_t) * p_entry_ex->entry->data_type_count;
-            creq->lte = (struct lte_t *)malloc(sz);
-            memcpy(creq->lte, p_entry_ex->data, sz);
+            creq->lte = (struct lte_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_GPS:
             creq->gps_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct gps_t) * p_entry_ex->entry->data_type_count;
-            creq->gps = (struct gps_t *)malloc(sz);
-            memcpy(creq->gps, p_entry_ex->data, sz);
+            creq->gps = (struct gps_t *)p_entry_ex->data;
             break;
         case DATA_TYPE_PAD:
             return 0; // success
@@ -230,28 +223,28 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
     payload_length += sizeof(sky_entry_t) + sizeof(float); // distance to point
     if (cresp->payload_type == LOCATION_RQ_ADDR) {
-        if (cresp->location_ex.street_num_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.street_num_len;
-        if (cresp->location_ex.address_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.address_len;
-        if (cresp->location_ex.city_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.city_len;
-        if (cresp->location_ex.state_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.state_len;
-        if (cresp->location_ex.state_code_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.state_code_len;
-        if (cresp->location_ex.metro1_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.metro1_len;
-        if (cresp->location_ex.metro2_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.metro2_len;
-        if (cresp->location_ex.postal_code_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.postal_code_len;
-        if (cresp->location_ex.county_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.county_len;
-        if (cresp->location_ex.country_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.country_len;
-        if (cresp->location_ex.country_code_len > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ex.country_code_len;
+        if (cresp->location_ext.street_num_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.street_num_len;
+        if (cresp->location_ext.address_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.address_len;
+        if (cresp->location_ext.city_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.city_len;
+        if (cresp->location_ext.state_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.state_len;
+        if (cresp->location_ext.state_code_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.state_code_len;
+        if (cresp->location_ext.metro1_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.metro1_len;
+        if (cresp->location_ext.metro2_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.metro2_len;
+        if (cresp->location_ext.postal_code_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.postal_code_len;
+        if (cresp->location_ext.county_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.county_len;
+        if (cresp->location_ext.country_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.country_len;
+        if (cresp->location_ext.country_code_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.country_code_len;
     }
 
     // payload length must be a multiple of 16 bytes
@@ -262,7 +255,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     // so some fields (e.g. user id) are correct already.
     // update fields in buffer
     sky_rq_header_t header;
-    header.version = cresp->protocol;
+    header.version = cresp->protocol_version;
     header.payload_length = payload_length;
     header.user_id = cresp->key.userid;
     sky_gen_iv(header.iv); // 16 byte initialization vector
@@ -271,9 +264,9 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
-    payload_ex.payload.sw_version = cresp->version;
+    payload_ex.payload.sw_version = cresp->sw_version;
     memcpy(payload_ex.payload.mac, cresp->MAC, sizeof(payload_ex.payload.mac));
-    memcpy(payload_ex.payload.ipv6, cresp->location_ex.ip_addr, sizeof(payload_ex.payload.ipv6));
+    memcpy(payload_ex.payload.ipv6, cresp->location_ext.ip_addr, sizeof(payload_ex.payload.ipv6));
     payload_ex.payload.type = cresp->payload_type;
     memcpy(payload_ex.payload.timestamp, &cresp->timestamp, sizeof(payload_ex.payload.timestamp));
     if (!sky_set_payload(buff, buff_len, &payload_ex, header.payload_length))
@@ -299,83 +292,83 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 
         p_entry_ex->entry->data_type = DATA_TYPE_DIST_POINT;
         p_entry_ex->entry->data_type_count = sizeof(float);
-        memcpy(p_entry_ex->data, &cresp->location_ex.distance_to_point, sizeof(float));
+        memcpy(p_entry_ex->data, &cresp->location_ext.distance_to_point, sizeof(float));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
 
-        if (cresp->location_ex.street_num_len > 0) {
+        if (cresp->location_ext.street_num_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_STREET_NUM;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.street_num_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.street_num, cresp->location_ex.street_num_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.street_num_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.street_num, cresp->location_ext.street_num_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.address_len > 0) {
+        if (cresp->location_ext.address_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_ADDRESS;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.address_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.address, cresp->location_ex.address_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.address_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.address, cresp->location_ext.address_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.city_len > 0) {
+        if (cresp->location_ext.city_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_CITY;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.city_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.city, cresp->location_ex.city_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.city_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.city, cresp->location_ext.city_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.state_len > 0) {
+        if (cresp->location_ext.state_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_STATE;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.state_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.state, cresp->location_ex.state_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.state_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.state, cresp->location_ext.state_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.state_code_len > 0) {
+        if (cresp->location_ext.state_code_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_STATE_CODE;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.state_code_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.state_code, cresp->location_ex.state_code_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.state_code_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.state_code, cresp->location_ext.state_code_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.metro1_len > 0) {
+        if (cresp->location_ext.metro1_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_METRO1;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.metro1_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.metro1, cresp->location_ex.metro1_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.metro1_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.metro1, cresp->location_ext.metro1_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.metro2_len > 0) {
+        if (cresp->location_ext.metro2_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_METRO2;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.metro2_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.metro2, cresp->location_ex.metro2_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.metro2_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.metro2, cresp->location_ext.metro2_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.postal_code_len > 0) {
+        if (cresp->location_ext.postal_code_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_POSTAL_CODE;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.postal_code_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.postal_code, cresp->location_ex.postal_code_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.postal_code_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.postal_code, cresp->location_ext.postal_code_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);;
         }
 
-        if (cresp->location_ex.county_len > 0) {
+        if (cresp->location_ext.county_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_COUNTY;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.county_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.county, cresp->location_ex.county_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.county_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.county, cresp->location_ext.county_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.country_len > 0) {
+        if (cresp->location_ext.country_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_COUNTRY;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.country_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.country, cresp->location_ex.country_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.country_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.country, cresp->location_ext.country_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ex.country_code_len > 0) {
+        if (cresp->location_ext.country_code_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_COUNTRY_CODE;
-            p_entry_ex->entry->data_type_count = cresp->location_ex.country_code_len;
-            memcpy(p_entry_ex->data, cresp->location_ex.country_code, cresp->location_ex.country_code_len);
+            p_entry_ex->entry->data_type_count = cresp->location_ext.country_code_len;
+            memcpy(p_entry_ex->data, cresp->location_ext.country_code, cresp->location_ext.country_code_len);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
     }
@@ -388,7 +381,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 
     sky_set_checksum(buff, buff_len, header.payload_length);
 
-    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum);
+    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
 }
 
 // sent by the client to the server
@@ -440,7 +433,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     payload_length += pad_len;
 
     sky_rq_header_t header;
-    header.version = creq->protocol;
+    header.version = creq->protocol_version;
     header.payload_length = payload_length;
     header.user_id = creq->key.userid;
     // 16 byte initialization vector
@@ -450,7 +443,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
 
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
-    payload_ex.payload.sw_version = creq->version; // client firmware version
+    payload_ex.payload.sw_version = creq->sw_version; // client firmware version
     memcpy(payload_ex.payload.mac, creq->MAC, sizeof(payload_ex.payload.mac));
     memcpy(payload_ex.payload.ipv6, creq->ip_addr, sizeof(payload_ex.payload.ipv6));
     payload_ex.payload.type = creq->payload_type;
@@ -481,19 +474,19 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         switch (creq->cell_type) {
         case DATA_TYPE_GSM:
             sz = sizeof(struct gsm_t) * ccnt;
-            memcpy(p_entry_ex->data, creq->gsm, sz);
+            memcpy(p_entry_ex->data, &creq->cell->gsm, sz);
             break;
         case DATA_TYPE_LTE:
             sz = sizeof(struct lte_t) * ccnt;
-            memcpy(p_entry_ex->data, creq->lte, sz);
+            memcpy(p_entry_ex->data, &creq->cell->lte, sz);
             break;
         case DATA_TYPE_CDMA:
             sz = sizeof(struct cdma_t) * ccnt;
-            memcpy(p_entry_ex->data, creq->cdma, sz);
+            memcpy(p_entry_ex->data, &creq->cell->cdma, sz);
             break;
         case DATA_TYPE_UMTS:
             sz = sizeof(struct umts_t) * ccnt;
-            memcpy(p_entry_ex->data, creq->umts, sz);
+            memcpy(p_entry_ex->data, &creq->cell->umts, sz);
             break;
         default:
             perror("unknown data type");
@@ -519,7 +512,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     if (!sky_set_checksum(buff, buff_len, header.payload_length))
         return -1;
 
-    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum);
+    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
 }
 
 // received by the client from the server
@@ -538,10 +531,10 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     if (!sky_get_payload(buff, buff_len, &payload_ex, header.payload_length))
         return -1;
 
-    cresp->protocol = header.version; // protocol version
-    cresp->version = payload_ex.payload.sw_version;
+    cresp->protocol_version = header.version; // protocol version
+    cresp->sw_version = payload_ex.payload.sw_version;
     memcpy(cresp->MAC, payload_ex.payload.mac, sizeof(cresp->MAC));
-    memcpy(cresp->location_ex.ip_addr, payload_ex.payload.ipv6, sizeof(cresp->location_ex.ip_addr));
+    memcpy(cresp->location_ext.ip_addr, payload_ex.payload.ipv6, sizeof(cresp->location_ext.ip_addr));
     cresp->payload_type = payload_ex.payload.type;
     memcpy(&cresp->timestamp, payload_ex.payload.timestamp, sizeof(payload_ex.payload.timestamp));
 
@@ -565,59 +558,59 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
                 memcpy(&cresp->location, p_entry_ex->data, p_entry_ex->entry->data_type_count);
                 break;
             case DATA_TYPE_STREET_NUM:
-                cresp->location_ex.street_num_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.street_num = (char *)p_entry_ex->data;
+                cresp->location_ext.street_num_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.street_num = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_ADDRESS:
-                cresp->location_ex.address_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.address = (char *)p_entry_ex->data;
+                cresp->location_ext.address_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.address = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_CITY:
-                cresp->location_ex.city_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.city = (char *)p_entry_ex->data;
+                cresp->location_ext.city_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.city = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_STATE:
-                cresp->location_ex.state_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.state = (char *)p_entry_ex->data;
+                cresp->location_ext.state_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.state = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_STATE_CODE:
-                cresp->location_ex.state_code_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.state_code = (char *)p_entry_ex->data;
+                cresp->location_ext.state_code_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.state_code = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_METRO1:
-                cresp->location_ex.metro1_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.metro1 = (char *)p_entry_ex->data;
+                cresp->location_ext.metro1_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.metro1 = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_METRO2:
-                cresp->location_ex.metro2_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.metro2 = (char *)p_entry_ex->data;
+                cresp->location_ext.metro2_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.metro2 = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_POSTAL_CODE:
-                cresp->location_ex.postal_code_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.postal_code = (char *)p_entry_ex->data;
+                cresp->location_ext.postal_code_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.postal_code = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_COUNTY:
-                cresp->location_ex.county_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.county = (char *)p_entry_ex->data;
+                cresp->location_ext.county_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.county = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_COUNTRY:
-                cresp->location_ex.country_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.country = (char *)p_entry_ex->data;
+                cresp->location_ext.country_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.country = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_COUNTRY_CODE:
-                cresp->location_ex.country_code_len = p_entry_ex->entry->data_type_count;
-                cresp->location_ex.country_code = (char *)p_entry_ex->data;
+                cresp->location_ext.country_code_len = p_entry_ex->entry->data_type_count;
+                cresp->location_ext.country_code = (char *)p_entry_ex->data;
                 break;
             case DATA_TYPE_IPV4:
-                cresp->location_ex.ip_type = DATA_TYPE_IPV4;
-                memcpy(cresp->location_ex.ip_addr, p_entry_ex->data, p_entry_ex->entry->data_type_count);
+                cresp->location_ext.ip_type = DATA_TYPE_IPV4;
+                memcpy(cresp->location_ext.ip_addr, p_entry_ex->data, p_entry_ex->entry->data_type_count);
                 break;
             case DATA_TYPE_IPV6:
-                cresp->location_ex.ip_type = DATA_TYPE_IPV6;
-                memcpy(cresp->location_ex.ip_addr, p_entry_ex->data, p_entry_ex->entry->data_type_count);
+                cresp->location_ext.ip_type = DATA_TYPE_IPV6;
+                memcpy(cresp->location_ext.ip_addr, p_entry_ex->data, p_entry_ex->entry->data_type_count);
                 break;
             case DATA_TYPE_DIST_POINT:
-                memcpy(&cresp->location_ex.distance_to_point, p_entry_ex->data, p_entry_ex->entry->data_type_count);
+                memcpy(&cresp->location_ext.distance_to_point, p_entry_ex->data, p_entry_ex->entry->data_type_count);
                 break;
             case DATA_TYPE_PAD:
                 return 0; // success

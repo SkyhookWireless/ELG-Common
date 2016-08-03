@@ -21,20 +21,23 @@ extern "C" {
 
 #define MAX_AP                  100
 #define MAX_GPS                 2
-#define MAX_CELL                5
+#define MAX_CELL                7
 #define MAX_BLE                 5
 
 #define SKY_PROT_RQ_BUFF_LEN \
-    sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum) \
+    sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
     + MAX_AP * (sizeof(sky_entry_t) + sizeof(struct ap_t)) \
     + MAX_GPS * (sizeof(sky_entry_t) + sizeof(struct gps_t)) \
     + MAX_CELL * (sizeof(sky_entry_t) + sizeof(union cell_t)) \
     + MAX_BLE * (sizeof(sky_entry_t) + sizeof(struct ble_t))
 
 #define SKY_PROT_RSP_BUFF_LEN \
-    sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum) \
+    sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
     + sizeof(struct location_t) + sizeof(struct location_ext_t) \
     + 1024 // the char array of full address
+
+#define SKY_PROT_BUFF_LEN ((SKY_PROT_RQ_BUFF_LEN > SKY_PROT_RSP_BUFF_LEN) ? \
+        SKY_PROT_RQ_BUFF_LEN : SKY_PROT_RSP_BUFF_LEN)
 
 #ifndef ENOBUFS
 #define ENOBUFS (ENOMEM)
@@ -170,7 +173,8 @@ typedef struct {
     uint8_t type;              // payload type
     uint8_t ipv6[16];          // client ip address: ipv4 is set at the first 4 bytes with
                                // the rest 12 bytes being set to zeros.
-    uint8_t timestamp[8];      // timestamp in milliseconds
+    uint8_t timestamp[6];      // timestamp in milliseconds
+    uint8_t unused[2];         // padding bytes
 } sky_payload_t;
 
 typedef struct {
@@ -178,11 +182,12 @@ typedef struct {
     sky_entry_ext_t data_entry;// data_entry is updated to iterate over an unbounded array of data entries in buffer
 } sky_payload_ext_t;
 
-typedef uint16_t sky_checksum;
+typedef uint16_t sky_checksum_t;
 
 //
 // protocol payload data entry data types
 // location request
+// Note: all data types are explicitly padded for 32-bit alignment.
 //
 
 /* WARNING
@@ -252,10 +257,11 @@ struct gps_t {
     double lon;
     float alt; // altitude
     float hpe;
-    uint32_t age; // last seen in ms
     float speed;
+    uint32_t age; // last seen in ms
     uint8_t nsat;
     uint8_t fix;
+    uint8_t unused[2]; // padding bytes
 };
 
 // blue tooth
@@ -265,11 +271,13 @@ struct ble_t {
     uint8_t MAC[6];
     uint8_t uuid[16];
     int8_t rssi;
+    uint8_t unused; // padding byte
 };
 
 //
 // protocol payload data entry data types
 // location response
+// Note: all data types are explicitly padded for 32-bit alignment.
 //
 
 // location result
@@ -340,84 +348,87 @@ struct sky_key_t {
 
 struct location_rq_t {
 
-    /* user key */
-    struct sky_key_t key;
+    //
+    // protocol attributes
+    //
 
-    /* protocol version number */
-    uint8_t protocol;
+    uint8_t protocol_version;
+    uint8_t unused;
+    uint16_t payload_length;
+    uint32_t user_id;
+    uint8_t iv[16];
 
-    /* client software version */
-    uint8_t version;
-
-    /* client device MAC identifier */
-    uint8_t MAC[6];
-
-    /* payload type */
+    uint8_t sw_version; // client software version
+    uint8_t timestamp[6]; // in ms
     uint8_t payload_type;
 
-    /* client IP address */
-    uint8_t ip_addr[16];
+    uint8_t MAC[6]; // client device MAC identifier
+    uint8_t ip_addr[16]; // ipv4 or ipv6
 
-    /* timestamp */
-    uint8_t timestamp[6]; // in ms
-
-    /* wifi access points */
+    // wifi access points
     uint8_t ap_count;
     struct ap_t *aps;
 
-    /* ble beacons */
+    // blue tooth
     uint8_t ble_count;
     struct ble_t *bles;
 
-    /* cell */
-// cell count refers to one of the struct count below
+    // cell
     uint8_t cell_count;
-    uint8_t cell_type; // SKY_DATA_TYPE
+    uint8_t cell_type;
+    union cell_t *cell; // gsm, cdma, lte and umts
 
-    union cell_t cell; // gsm, cdma, lte and umts
-// TODO use a union for cell types
+    // gps
+    uint8_t gps_count;
+    struct gps_t *gps;
+
+    //
+    // additional attributes
+    //
+
+    struct sky_key_t key; // user key
+    char *api_version; // api server version number (string 2.34)
+
+    // http server settings
+    char *http_url;
+    char *http_uri;
+
+    //
+    // reserved for elg server use
+    //
+
     struct gsm_t *gsm;
     struct cdma_t *cdma;
     struct lte_t *lte;
     struct umts_t *umts;
-
-    /* gps */
-    uint8_t gps_count;
-    struct gps_t *gps;
-
-    /* http server settings */
-    char *http_url;
-    char *http_uri;
-
-    /* api server version number (string 2.34) */
-    char *api_version;
 };
 
 struct location_rsp_t {
 
-    /* user key */
-    struct sky_key_t key;
+    //
+    // protocol_version attributes
+    //
 
-    /* protocol version number */
-    uint8_t protocol;
+    uint8_t protocol_version;
+    uint8_t unused;
+    uint16_t payload_length;
+    uint8_t iv[16];
 
-    /* server software version */
-    uint8_t version;
-
-    /* client device MAC identifier */
-    uint8_t MAC[6];
-
-    /* payload type */
+    uint8_t sw_version; // client software version
+    uint8_t timestamp[6]; // in ms
     uint8_t payload_type;
 
-    /* timestamp */
-    uint8_t timestamp[6]; // in ms
+    uint8_t MAC[6]; // client device MAC identifier
 
-    /* location result */
-    struct location_t location;
+    //
+    // additional attributes
+    //
 
-    /* ext location res, adress etc */
-    struct location_ext_t location_ex;
+    struct sky_key_t key; // user key
+
+    struct location_t location; // location result: lat and lon
+
+    struct location_ext_t location_ext; // ext location result: full address, etc.
 };
 
 /***********************************************
