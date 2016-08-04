@@ -277,7 +277,11 @@ struct ble_t {
 //
 // protocol payload data entry data types
 // location response
-// Note: all data types are explicitly padded for 32-bit alignment.
+// Note:
+// * location_t is already 32-bit aligned.
+// * location_ext_t needs to be reinterpreted in place in buffer,
+//   and it is the last data type structure in the response buffer,
+//   so it is unnecessary to be padded at the end for 32-bit alignment.
 //
 
 // location result
@@ -289,6 +293,7 @@ struct location_t {
 
 // extended location result
 struct location_ext_t {
+
     float distance_to_point;
 
     uint8_t ip_type; // DATA_TYPE_IPV4 or DATA_TYPE_IPV6
@@ -352,11 +357,7 @@ struct location_rq_t {
     // protocol attributes
     //
 
-    uint8_t protocol_version;
-    uint8_t unused;
-    uint16_t payload_length;
-    uint32_t user_id;
-    uint8_t iv[16];
+    sky_rq_header_t header;
 
     uint8_t sw_version; // client software version
     uint8_t timestamp[6]; // in ms
@@ -409,10 +410,7 @@ struct location_rsp_t {
     // protocol_version attributes
     //
 
-    uint8_t protocol_version;
-    uint8_t unused;
-    uint16_t payload_length;
-    uint8_t iv[16];
+    sky_rsp_header_t header;
 
     uint8_t sw_version; // client software version
     uint8_t timestamp[6]; // in ms

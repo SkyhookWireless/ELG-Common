@@ -64,7 +64,7 @@ void print_location_resp(struct location_rsp_t *cr) {
     memcpy(p_timestamp + 2, cr->timestamp, sizeof(cr->timestamp));
     printf("\n");
     printf("timestamp: %lu\n", timestamp);
-    printf("protocol: %d\n", cr->protocol_version);
+    printf("protocol: %d\n", cr->header.version);
     printf("server version: %d\n", cr->sw_version);
     printf("payload type no: %d\n", cr->payload_type);
 
@@ -101,7 +101,7 @@ void print_location_resp(struct location_rsp_t *cr) {
 void print_location_req(struct location_rq_t *cr) {
     int32_t i, j;
 
-    printf("protocol: %d\n", cr->protocol_version);
+    printf("protocol: %d\n", cr->header.version);
     printf("payload type: %d\n", cr->payload_type);
     printf("firmware version: %d\n", cr->sw_version);
 

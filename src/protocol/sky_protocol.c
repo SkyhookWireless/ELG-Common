@@ -130,20 +130,18 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
 int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         struct location_rq_t *creq) {
 
-    sky_rq_header_t header;
-    memset(&header, 0, sizeof(header));
-    if (!sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
+    memset(&creq->header, 0, sizeof(creq->header));
+    if (!sky_get_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
         return -1;
-    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
+    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(creq->header), creq->header.payload_length))
         return -1;
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
-    if (!sky_get_payload(buff, buff_len, &payload_ex, header.payload_length))
+    if (!sky_get_payload(buff, buff_len, &payload_ex, creq->header.payload_length))
         return -1;
 
     /* binary protocol description in sky_protocol.h */
-    creq->protocol_version = header.version; // protocol version
-    creq->key.userid = header.user_id;
+    creq->key.userid = creq->header.user_id;
     creq->sw_version = payload_ex.payload.sw_version; // client software version
     memcpy(creq->MAC, payload_ex.payload.mac, sizeof(creq->MAC)); // device mac address
     memcpy(creq->ip_addr, payload_ex.payload.ipv6, sizeof(creq->ip_addr));
@@ -158,7 +156,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     // read data entries from buffer
     sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
     uint32_t payload_offset = sizeof(sky_payload_t);
-    while (payload_offset < header.payload_length) {
+    while (payload_offset < creq->header.payload_length) {
         uint32_t sz = 0;
         switch (p_entry_ex->entry->data_type) {
         case DATA_TYPE_AP:
@@ -254,12 +252,9 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     // Note that buffer contains the legacy date for location request,
     // so some fields (e.g. user id) are correct already.
     // update fields in buffer
-    sky_rq_header_t header;
-    header.version = cresp->protocol_version;
-    header.payload_length = payload_length;
-    header.user_id = cresp->key.userid;
-    sky_gen_iv(header.iv); // 16 byte initialization vector
-    if (!sky_set_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
+    cresp->header.payload_length = payload_length;
+    sky_gen_iv(cresp->header.iv); // 16 byte initialization vector
+    if (!sky_set_header(buff, buff_len, (uint8_t *)&cresp->header, sizeof(cresp->header)))
         return -1;
 
     sky_payload_ext_t payload_ex;
@@ -269,7 +264,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     memcpy(payload_ex.payload.ipv6, cresp->location_ext.ip_addr, sizeof(payload_ex.payload.ipv6));
     payload_ex.payload.type = cresp->payload_type;
     memcpy(payload_ex.payload.timestamp, &cresp->timestamp, sizeof(payload_ex.payload.timestamp));
-    if (!sky_set_payload(buff, buff_len, &payload_ex, header.payload_length))
+    if (!sky_set_payload(buff, buff_len, &payload_ex, cresp->header.payload_length))
         return -1;
 
     // fill in data entries in place in buffer
@@ -375,13 +370,13 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 
     // fill in padding bytes
     if (pad_len > 0) {
-        uint8_t * pad_bytes = buff + sizeof(sky_rq_header_t) + header.payload_length - pad_len;
+        uint8_t * pad_bytes = buff + sizeof(sky_rq_header_t) + cresp->header.payload_length - pad_len;
         memset(pad_bytes, DATA_TYPE_PAD, pad_len);
     }
 
-    sky_set_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length);
+    sky_set_checksum(buff, buff_len, (uint8_t)sizeof(cresp->header), cresp->header.payload_length);
 
-    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
+    return sizeof(sky_rq_header_t) + cresp->header.payload_length + sizeof(sky_checksum_t);
 }
 
 // sent by the client to the server
@@ -432,13 +427,11 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     uint8_t pad_len = pad_16(payload_length);
     payload_length += pad_len;
 
-    sky_rq_header_t header;
-    header.version = creq->protocol_version;
-    header.payload_length = payload_length;
-    header.user_id = creq->key.userid;
+    creq->header.payload_length = payload_length;
+    creq->header.user_id = creq->key.userid;
     // 16 byte initialization vector
-    sky_gen_iv(header.iv);
-    if (!sky_set_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
+    sky_gen_iv(creq->header.iv);
+    if (!sky_set_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
         return -1;
 
     sky_payload_ext_t payload_ex;
@@ -448,7 +441,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     memcpy(payload_ex.payload.ipv6, creq->ip_addr, sizeof(payload_ex.payload.ipv6));
     payload_ex.payload.type = creq->payload_type;
     memcpy(payload_ex.payload.timestamp, &creq->timestamp, sizeof(payload_ex.payload.timestamp));
-    if (!sky_set_payload(buff, buff_len, &payload_ex, header.payload_length))
+    if (!sky_set_payload(buff, buff_len, &payload_ex, creq->header.payload_length))
         return -1;
 
     // fill in data entries in buffer
@@ -509,10 +502,10 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         memset(pad_bytes, DATA_TYPE_PAD, pad_len);
     }
 
-    if (!sky_set_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
+    if (!sky_set_checksum(buff, buff_len, (uint8_t)sizeof(creq->header), creq->header.payload_length))
         return -1;
 
-    return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
+    return sizeof(sky_rq_header_t) + creq->header.payload_length + sizeof(sky_checksum_t);
 }
 
 // received by the client from the server
@@ -520,18 +513,16 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
 int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         struct location_rsp_t *cresp) {
 
-    sky_rq_header_t header;
-    memset(&header, 0, sizeof(header));
-    if (!sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
+    memset(&cresp->header, 0, sizeof(cresp->header));
+    if (!sky_get_header(buff, buff_len, (uint8_t *)&cresp->header, sizeof(cresp->header)))
         return -1;
-    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
+    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(cresp->header), cresp->header.payload_length))
         return -1;
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
-    if (!sky_get_payload(buff, buff_len, &payload_ex, header.payload_length))
+    if (!sky_get_payload(buff, buff_len, &payload_ex, cresp->header.payload_length))
         return -1;
 
-    cresp->protocol_version = header.version; // protocol version
     cresp->sw_version = payload_ex.payload.sw_version;
     memcpy(cresp->MAC, payload_ex.payload.mac, sizeof(cresp->MAC));
     memcpy(cresp->location_ext.ip_addr, payload_ex.payload.ipv6, sizeof(cresp->location_ext.ip_addr));
@@ -552,7 +543,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     if (cresp->payload_type == LOCATION_RQ_ADDR) {
         sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
         uint32_t payload_offset = sizeof(sky_payload_t);
-        while (payload_offset < header.payload_length) {
+        while (payload_offset < cresp->header.payload_length) {
             switch (p_entry_ex->entry->data_type) {
             case DATA_TYPE_LAT_LON:
                 memcpy(&cresp->location, p_entry_ex->data, p_entry_ex->entry->data_type_count);
