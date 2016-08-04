@@ -17,7 +17,8 @@ extern "C" {
 
 #define SKY_PROTOCOL_VERSION    1
 
-#define IV_OFFSET_1             8
+#define IPV4_SIZE               4
+#define IPV6_SIZE               16
 
 #define MAX_AP                  100
 #define MAX_GPS                 2
@@ -169,12 +170,8 @@ typedef struct {
 
 typedef struct {
     uint8_t sw_version;        // client sw version for request and server sw version for response
-    uint8_t mac[6];            // client device MAC address
-    uint8_t type;              // payload type
-    uint8_t ipv6[16];          // client ip address: ipv4 is set at the first 4 bytes with
-                               // the rest 12 bytes being set to zeros.
     uint8_t timestamp[6];      // timestamp in milliseconds
-    uint8_t unused[2];         // padding bytes
+    uint8_t type;              // payload type
 } sky_payload_t;
 
 typedef struct {

@@ -79,7 +79,7 @@ void print_location_resp(struct location_rsp_t *cr) {
         print_location_rq(cr);
         break;
     case LOCATION_RQ_ADDR_SUCCESS:
-        puts("LOCATION_RQ_SUCCESS");
+        puts("LOCATION_RQ_ADDR_SUCCESS");
         print_location_rq(cr);
         print_location_rq_addr(cr);
         break;
