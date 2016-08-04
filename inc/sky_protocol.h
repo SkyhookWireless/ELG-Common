@@ -523,7 +523,7 @@ struct location_rsp_t {
 
 // find aes key  based on userid in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
-uint32_t sky_get_userid(uint8_t *buff, int32_t buff_len);
+uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
 // received by the server from the client
 // decode binary data from client, result is in the location_req_t struct

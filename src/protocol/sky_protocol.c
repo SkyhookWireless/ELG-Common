@@ -36,20 +36,20 @@ bool adjust_data_entry(const uint8_t * buff, uint32_t buff_len, uint32_t offset,
 
 // Return header by parameter "header & h".
 inline
-bool sky_get_header(const uint8_t * buff, uint32_t buff_len, sky_rq_header_t * p_header) {
-    if (buff_len < sizeof(sky_rq_header_t)) {
+bool sky_get_header(const uint8_t * buff, uint32_t buff_len, uint8_t * p_header, uint32_t header_len) {
+    if (buff_len < header_len) {
         perror("buffer too small");
         return false;
     }
-    memcpy(p_header, buff, sizeof(sky_rq_header_t));
+    memcpy(p_header, buff, header_len);
     return true;
 }
 
 // Return payload content by parameter "sky_payload_ex & payload".
 // Note: payload_ex.data_entry is a pointer referring to an address in buffer.
 inline
-bool sky_get_payload(const uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length) {
+bool sky_get_payload(const uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_len) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_len) {
         perror("buffer too small");
         return false;
     }
@@ -61,13 +61,13 @@ bool sky_get_payload(const uint8_t * buff, uint32_t buff_len, sky_payload_ext_t 
 
 // Verify checksum.
 inline
-bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum_t)) {
+bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint8_t header_len, uint16_t payload_len) {
+    if (buff_len < header_len + payload_len + sizeof(sky_checksum_t)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum_t cs = *(sky_checksum_t *)(buff + sizeof(sky_rq_header_t) + payload_length); // little endianness
-    if (cs == fletcher16(buff, sizeof(sky_rq_header_t) + payload_length))
+    sky_checksum_t cs = *(sky_checksum_t *)(buff + header_len + payload_len); // little endianness
+    if (cs == fletcher16(buff, header_len + payload_len))
         return 1;
     else {
         perror("invalid checksum");
@@ -77,12 +77,12 @@ bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint16_t paylo
 
 // Set header in parameter "uint8_t * buff".
 inline
-bool sky_set_header(uint8_t * buff, uint32_t buff_len, const sky_rq_header_t * p_header) {
-    if (buff_len < sizeof(sky_rq_header_t)) {
+bool sky_set_header(uint8_t * buff, uint32_t buff_len, const uint8_t * p_header, uint32_t header_len) {
+    if (buff_len < header_len) {
         perror("buffer too small");
         return false;
     }
-    memcpy(buff, p_header, sizeof(sky_rq_header_t));
+    memcpy(buff, p_header, header_len);
     return true;
 }
 
@@ -90,8 +90,8 @@ bool sky_set_header(uint8_t * buff, uint32_t buff_len, const sky_rq_header_t * p
 // Only set the payload without data entries; the data entries needs to be filled in place in buffer
 // by using "payload_ex.data_entry".
 inline
-bool sky_set_payload(uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length) {
+bool sky_set_payload(uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_payload_ex, uint16_t payload_len) {
+    if (buff_len < sizeof(sky_rq_header_t) + payload_len) {
         perror("buffer too small");
         return false;
     }
@@ -103,22 +103,22 @@ bool sky_set_payload(uint8_t * buff, uint32_t buff_len, sky_payload_ext_t * p_pa
 
 // Set checksum in parameter "uint8_t * buff".
 inline
-bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint16_t payload_length) {
-    if (buff_len < sizeof(sky_rq_header_t) + payload_length + sizeof(sky_checksum_t)) {
+bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint8_t header_len, uint16_t payload_len) {
+    if (buff_len < header_len + payload_len + sizeof(sky_checksum_t)) {
         perror("buffer too small");
         return false;
     }
-    sky_checksum_t cs = fletcher16(buff, sizeof(sky_rq_header_t) + payload_length);
-    *(sky_checksum_t *)(buff + sizeof(sky_rq_header_t) + payload_length) = cs; // little endianness
+    sky_checksum_t cs = fletcher16(buff, header_len + payload_len);
+    *(sky_checksum_t *)(buff + header_len + payload_len) = cs; // little endianness
     return true;
 }
 
 // find aes key  based on userid in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
-uint32_t sky_get_userid(uint8_t *buff, int32_t buff_len) {
+uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
     sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
-    if (sky_get_header(buff, buff_len, &header)) {
+    if (sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header))) {
         return header.user_id;
     }
     return 0;
@@ -132,9 +132,9 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 
     sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
-    if (!sky_get_header(buff, buff_len, &header))
+    if (!sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
         return -1;
-    if (!sky_verify_checksum(buff, buff_len, header.payload_length))
+    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
         return -1;
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
@@ -259,7 +259,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     header.payload_length = payload_length;
     header.user_id = cresp->key.userid;
     sky_gen_iv(header.iv); // 16 byte initialization vector
-    if (!sky_set_header(buff, buff_len, &header))
+    if (!sky_set_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
         return -1;
 
     sky_payload_ext_t payload_ex;
@@ -379,7 +379,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
         memset(pad_bytes, DATA_TYPE_PAD, pad_len);
     }
 
-    sky_set_checksum(buff, buff_len, header.payload_length);
+    sky_set_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length);
 
     return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
 }
@@ -438,7 +438,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     header.user_id = creq->key.userid;
     // 16 byte initialization vector
     sky_gen_iv(header.iv);
-    if (!sky_set_header(buff, buff_len, &header))
+    if (!sky_set_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
         return -1;
 
     sky_payload_ext_t payload_ex;
@@ -509,7 +509,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         memset(pad_bytes, DATA_TYPE_PAD, pad_len);
     }
 
-    if (!sky_set_checksum(buff, buff_len, header.payload_length))
+    if (!sky_set_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
         return -1;
 
     return sizeof(sky_rq_header_t) + header.payload_length + sizeof(sky_checksum_t);
@@ -522,9 +522,9 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 
     sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
-    if (!sky_get_header(buff, buff_len, &header))
+    if (!sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header)))
         return -1;
-    if (!sky_verify_checksum(buff, buff_len, header.payload_length))
+    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(header), header.payload_length))
         return -1;
     sky_payload_ext_t payload_ex;
     memset(&payload_ex, 0, sizeof(payload_ex));
