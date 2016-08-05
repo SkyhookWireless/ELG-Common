@@ -355,10 +355,7 @@ struct location_rq_t {
     //
 
     sky_rq_header_t header;
-
-    uint8_t sw_version; // client software version
-    uint8_t timestamp[6]; // in ms
-    uint8_t payload_type;
+    sky_payload_ext_t payload_ext;
 
     uint8_t MAC[6]; // client device MAC identifier
     uint8_t ip_addr[16]; // ipv4 or ipv6
@@ -408,10 +405,7 @@ struct location_rsp_t {
     //
 
     sky_rsp_header_t header;
-
-    uint8_t sw_version; // client software version
-    uint8_t timestamp[6]; // in ms
-    uint8_t payload_type;
+    sky_payload_ext_t payload_ext;
 
     uint8_t MAC[6]; // client device MAC identifier
 

@@ -61,19 +61,19 @@ void print_location_resp(struct location_rsp_t *cr) {
     int32_t i;
     uint64_t timestamp = 0;
     uint8_t * p_timestamp = (uint8_t *)&timestamp;
-    memcpy(p_timestamp + 2, cr->timestamp, sizeof(cr->timestamp));
+    memcpy(p_timestamp + 2, cr->payload_ext.payload.timestamp, sizeof(cr->payload_ext.payload.timestamp));
     printf("\n");
     printf("timestamp: %lu\n", timestamp);
     printf("protocol: %d\n", cr->header.version);
-    printf("server version: %d\n", cr->sw_version);
-    printf("payload type no: %d\n", cr->payload_type);
+    printf("server version: %d\n", cr->payload_ext.payload.sw_version);
+    printf("payload type no: %d\n", cr->payload_ext.payload.type);
 
     printf("Device MAC: ");
     for (i = 0; i < 6; i++)
         printf("%02X", cr->MAC[i]);
     printf("\n");
 
-    switch (cr->payload_type) {
+    switch (cr->payload_ext.payload.type) {
     case LOCATION_RQ_SUCCESS:
         puts("LOCATION_RQ_SUCCESS");
         print_location_rq(cr);
@@ -102,8 +102,8 @@ void print_location_req(struct location_rq_t *cr) {
     int32_t i, j;
 
     printf("protocol: %d\n", cr->header.version);
-    printf("payload type: %d\n", cr->payload_type);
-    printf("firmware version: %d\n", cr->sw_version);
+    printf("payload type: %d\n", cr->payload_ext.payload.type);
+    printf("firmware version: %d\n", cr->payload_ext.payload.sw_version);
 
     printf("userid: %d\n", cr->key.userid);
 

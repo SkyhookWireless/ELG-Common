@@ -152,24 +152,21 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         return -1;
     if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(creq->header), creq->header.payload_length))
         return -1;
-    sky_payload_ext_t payload_ex;
-    memset(&payload_ex, 0, sizeof(payload_ex));
-    if (!sky_get_payload(buff, buff_len, sizeof(sky_rq_header_t), &payload_ex, creq->header.payload_length))
+    memset(&creq->payload_ext, 0, sizeof(creq->payload_ext));
+    if (!sky_get_payload(buff, buff_len, sizeof(sky_rq_header_t), &creq->payload_ext, creq->header.payload_length))
         return -1;
 
     /* binary protocol description in sky_protocol.h */
     creq->key.userid = creq->header.user_id;
-    creq->sw_version = payload_ex.payload.sw_version; // client software version
-    creq->payload_type = payload_ex.payload.type;
-    memcpy(&creq->timestamp, payload_ex.payload.timestamp, sizeof(payload_ex.payload.timestamp));
 
-    if (creq->payload_type != LOCATION_RQ && creq->payload_type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "Unknown payload type %d\n", creq->payload_type);
+    if (creq->payload_ext.payload.type != LOCATION_RQ
+            && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
+        fprintf(stderr, "Unknown payload type %d\n", creq->payload_ext.payload.type);
         return -1;
     }
 
     // read data entries from buffer
-    sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+    sky_entry_ext_t * p_entry_ex = &creq->payload_ext.data_entry;
     uint32_t payload_offset = sizeof(sky_payload_t);
     while (payload_offset < creq->header.payload_length) {
         uint32_t sz = 0;
@@ -248,7 +245,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
             + sizeof(sky_entry_t) + IPV4_SIZE;
     payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
     payload_length += sizeof(sky_entry_t) + sizeof(float); // distance to point
-    if (cresp->payload_type == LOCATION_RQ_ADDR_SUCCESS) {
+    if (cresp->payload_ext.payload.type == LOCATION_RQ_ADDR_SUCCESS) {
         if (cresp->location_ext.street_num_len > 0)
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.street_num_len;
         if (cresp->location_ext.address_len > 0)
@@ -285,19 +282,14 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     if (!sky_set_header(buff, buff_len, (uint8_t *)&cresp->header, sizeof(cresp->header)))
         return -1;
 
-    sky_payload_ext_t payload_ex;
-    memset(&payload_ex, 0, sizeof(payload_ex));
-    payload_ex.payload.sw_version = cresp->sw_version;
-    payload_ex.payload.type = cresp->payload_type;
-    memcpy(payload_ex.payload.timestamp, &cresp->timestamp, sizeof(payload_ex.payload.timestamp));
-    if (!sky_set_payload(buff, buff_len, sizeof(sky_rsp_header_t), &payload_ex, cresp->header.payload_length))
+    if (!sky_set_payload(buff, buff_len, sizeof(sky_rsp_header_t), &cresp->payload_ext, cresp->header.payload_length))
         return -1;
 
     // fill in data entries in place in buffer
 
     // MAC
     {
-        sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+        sky_entry_ext_t * p_entry_ex = &cresp->payload_ext.data_entry;
         p_entry_ex->entry->data_type = DATA_TYPE_MAC;
         p_entry_ex->entry->data_type_count = sizeof(cresp->MAC);
         memcpy(p_entry_ex->data, cresp->MAC, p_entry_ex->entry->data_type_count);
@@ -305,23 +297,23 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     }
     // IPV4
     {
-        sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+        sky_entry_ext_t * p_entry_ex = &cresp->payload_ext.data_entry;
         p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
         p_entry_ex->entry->data_type_count = IPV4_SIZE;
         memcpy(p_entry_ex->data, cresp->location_ext.ip_addr, p_entry_ex->entry->data_type_count);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
     }
     // latitude and longitude
-    if (cresp->payload_type == LOCATION_RQ_SUCCESS) {
-        sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+    if (cresp->payload_ext.payload.type == LOCATION_RQ_SUCCESS) {
+        sky_entry_ext_t * p_entry_ex = &cresp->payload_ext.data_entry;
         p_entry_ex->entry->data_type = DATA_TYPE_LAT_LON;
         p_entry_ex->entry->data_type_count = sizeof(cresp->location);
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
     }
     // latitude, longitude, and full address, etc.
-    if (cresp->payload_type == LOCATION_RQ_ADDR_SUCCESS) {
-        sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+    if (cresp->payload_ext.payload.type == LOCATION_RQ_ADDR_SUCCESS) {
+        sky_entry_ext_t * p_entry_ex = &cresp->payload_ext.data_entry;
         p_entry_ex->entry->data_type = DATA_TYPE_LAT_LON;
         p_entry_ex->entry->data_type_count = sizeof(cresp->location);
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
@@ -426,9 +418,9 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 // returns the packet len or -1 when fails
 int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
-    if (creq->payload_type != LOCATION_RQ
-            && creq->payload_type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_type);
+    if (creq->payload_ext.payload.type != LOCATION_RQ
+            && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
+        fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_ext.payload.type);
         return -1;
     }
 
@@ -479,16 +471,11 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     if (!sky_set_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
         return -1;
 
-    sky_payload_ext_t payload_ex;
-    memset(&payload_ex, 0, sizeof(payload_ex));
-    payload_ex.payload.sw_version = creq->sw_version; // client firmware version
-    payload_ex.payload.type = creq->payload_type;
-    memcpy(payload_ex.payload.timestamp, &creq->timestamp, sizeof(payload_ex.payload.timestamp));
-    if (!sky_set_payload(buff, buff_len, sizeof(sky_rq_header_t), &payload_ex, creq->header.payload_length))
+    if (!sky_set_payload(buff, buff_len, sizeof(sky_rq_header_t), &creq->payload_ext, creq->header.payload_length))
         return -1;
 
     // fill in data entries in buffer
-    sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+    sky_entry_ext_t * p_entry_ex = &creq->payload_ext.data_entry;
     uint32_t sz = 0;
     // MAC
     {
@@ -580,24 +567,18 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         return -1;
     if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(cresp->header), cresp->header.payload_length))
         return -1;
-    sky_payload_ext_t payload_ex;
-    memset(&payload_ex, 0, sizeof(payload_ex));
-    if (!sky_get_payload(buff, buff_len, sizeof(sky_rsp_header_t), &payload_ex, cresp->header.payload_length))
+    if (!sky_get_payload(buff, buff_len, sizeof(sky_rsp_header_t), &cresp->payload_ext, cresp->header.payload_length))
         return -1;
 
-    cresp->sw_version = payload_ex.payload.sw_version;
-    cresp->payload_type = payload_ex.payload.type;
-    memcpy(&cresp->timestamp, payload_ex.payload.timestamp, sizeof(payload_ex.payload.timestamp));
-
-    if (cresp->payload_type != LOCATION_RQ_SUCCESS
-            && cresp->payload_type != LOCATION_RQ_ADDR_SUCCESS) {
-        fprintf(stderr, "Unknown payload type %d\n", cresp->payload_type);
+    if (cresp->payload_ext.payload.type != LOCATION_RQ_SUCCESS
+            && cresp->payload_ext.payload.type != LOCATION_RQ_ADDR_SUCCESS) {
+        fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
         return -1;
     }
 
     // read data entries from buffer
     // latitude, longitude and full address, etc.
-    sky_entry_ext_t * p_entry_ex = &payload_ex.data_entry;
+    sky_entry_ext_t * p_entry_ex = &cresp->payload_ext.data_entry;
     uint32_t payload_offset = sizeof(sky_payload_t);
     while (payload_offset < cresp->header.payload_length) {
         switch (p_entry_ex->entry->data_type) {
