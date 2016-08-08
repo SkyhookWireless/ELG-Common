@@ -12,6 +12,7 @@ extern "C" {
 #ifndef SKY_PROTOCOL_H
 #define SKY_PROTOCOL_H
 
+#include <assert.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 
@@ -26,25 +27,31 @@ extern "C" {
 #define MAX_CELL                7
 #define MAX_BLE                 5
 
-#define SKY_PROT_RQ_BUFF_LEN \
+#define SKY_PROT_RQ_BUFF_LEN                                                 \
     sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
-    + MAX_AP * (sizeof(sky_entry_t) + sizeof(struct ap_t)) \
-    + MAX_GPS * (sizeof(sky_entry_t) + sizeof(struct gps_t)) \
-    + MAX_CELL * (sizeof(sky_entry_t) + sizeof(union cell_t)) \
+    + MAX_AP * (sizeof(sky_entry_t) + sizeof(struct ap_t))                   \
+    + MAX_GPS * (sizeof(sky_entry_t) + sizeof(struct gps_t))                 \
+    + MAX_CELL * (sizeof(sky_entry_t) + sizeof(union cell_t))                \
     + MAX_BLE * (sizeof(sky_entry_t) + sizeof(struct ble_t))
 
-#define SKY_PROT_RSP_BUFF_LEN \
+#define SKY_PROT_RSP_BUFF_LEN                                                 \
     sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
-    + sizeof(struct location_t) + sizeof(struct location_ext_t) \
+    + sizeof(struct location_t) + sizeof(struct location_ext_t)               \
     + 1024 // the char array of full address
 
-#define SKY_PROT_BUFF_LEN ((SKY_PROT_RQ_BUFF_LEN > SKY_PROT_RSP_BUFF_LEN) ? \
-        SKY_PROT_RQ_BUFF_LEN : SKY_PROT_RSP_BUFF_LEN)
+#define SKY_PROT_BUFF_LEN                                                     \
+                            ((SKY_PROT_RQ_BUFF_LEN > SKY_PROT_RSP_BUFF_LEN) ? \
+                            SKY_PROT_RQ_BUFF_LEN : SKY_PROT_RSP_BUFF_LEN)
 
 #ifndef ENOBUFS
 #define ENOBUFS (ENOMEM)
 #endif
 
+// get a local (uint8_t *) buffer with size s and the starting memory address
+// being aligned at uint32_t boundary.
+#define SKY_LOCAL_BYTE_BUFF_32(b,s)   uint32_t sky____local_buffer____sky[(s)>>2]; \
+                                      assert(sizeof(*b) == sizeof(uint8_t));       \
+                                      (b) = (uint8_t *)sky____local_buffer____sky;
 
 // stored in one byte
 enum SKY_DATA_TYPE {
