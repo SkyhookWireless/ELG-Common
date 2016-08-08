@@ -244,7 +244,6 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     payload_length += sizeof(sky_entry_t) + sizeof(cresp->MAC)
             + sizeof(sky_entry_t) + IPV4_SIZE;
     payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
-    payload_length += sizeof(sky_entry_t) + sizeof(float); // distance to point
     if (cresp->payload_ext.payload.type == LOCATION_RQ_ADDR_SUCCESS) {
         if (cresp->location_ext.street_num_len > 0)
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.street_num_len;
@@ -317,11 +316,6 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
         p_entry_ex->entry->data_type = DATA_TYPE_LAT_LON;
         p_entry_ex->entry->data_type_count = sizeof(cresp->location);
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
-
-        p_entry_ex->entry->data_type = DATA_TYPE_DIST_POINT;
-        p_entry_ex->entry->data_type_count = sizeof(float);
-        memcpy(p_entry_ex->data, &cresp->location_ext.distance_to_point, sizeof(float));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
 
         if (cresp->location_ext.street_num_len > 0) {
@@ -639,9 +633,6 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case DATA_TYPE_COUNTRY_CODE:
             cresp->location_ext.country_code_len = p_entry_ex->entry->data_type_count;
             cresp->location_ext.country_code = (char *)p_entry_ex->data;
-            break;
-        case DATA_TYPE_DIST_POINT:
-            memcpy(&cresp->location_ext.distance_to_point, p_entry_ex->data, p_entry_ex->entry->data_type_count);
             break;
         case DATA_TYPE_PAD:
             return 0; // success

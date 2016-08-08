@@ -18,11 +18,11 @@ void print_location_rq(struct location_rsp_t* cr) {
     printf("latitude: %f\n", cr->location.lat);
     printf("longitude: %f\n", cr->location.lon);
     printf("hpe: %f\n", cr->location.hpe);
+    printf("distance_to_point: %f\n", cr->location.distance_to_point);
 }
 
 void print_location_rq_addr(struct location_rsp_t* cr) {
     puts("LOCATION_RQ_ADDR");
-    printf("distance_to_point: %f\n", cr->location_ext.distance_to_point);
     printf("street num: ");
     print_s(cr->location_ext.street_num, cr->location_ext.street_num_len);
     printf("address: ");

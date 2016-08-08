@@ -68,7 +68,6 @@ enum SKY_DATA_TYPE {
     DATA_TYPE_COUNTY,
     DATA_TYPE_COUNTRY,
     DATA_TYPE_COUNTRY_CODE,
-    DATA_TYPE_DIST_POINT,
 
     DATA_TYPE_IPV4,         // ipv4 address
     DATA_TYPE_IPV6,         // ipv6 address
@@ -275,7 +274,8 @@ struct ble_t {
 // protocol payload data entry data types
 // location response
 // Note:
-// * location_t is already 32-bit aligned.
+// * location_t is the only type 64-bit aligned. All the other types
+//   are 32-bit aligned.
 // * location_ext_t needs to be reinterpreted in place in buffer,
 //   and it is the last data type structure in the response buffer,
 //   so it is unnecessary to be padded at the end for 32-bit alignment.
@@ -283,15 +283,14 @@ struct ble_t {
 
 // location result
 struct location_t {
-    double lat;
-    double lon;
-    float hpe;
+    double lat; // 64 bit IEEE-754
+    double lon; // 64 bit IEEE-754
+    float hpe;  // 32 bit IEEE-754
+    float distance_to_point; // 32 bit IEEE-754
 };
 
 // extended location result
 struct location_ext_t {
-
-    float distance_to_point;
 
     uint8_t ip_type; // DATA_TYPE_IPV4 or DATA_TYPE_IPV6
     uint8_t ip_addr[16]; // used for ipv4 (4 bytes) or ipv6 (16 bytes)
