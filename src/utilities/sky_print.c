@@ -46,14 +46,6 @@ void print_location_rq_addr(struct location_rsp_t* cr) {
     printf("metro2: ");
     print_s(cr->location_ext.metro2, cr->location_ext.metro2_len);
     printf("ip: ");
-    {
-        uint8_t zero_12[12];
-        memset(zero_12, 0, sizeof(zero_12));
-        if (memcmp(cr->location_ext.ip_addr + 4, zero_12, sizeof(zero_12)) == 0)
-            cr->location_ext.ip_type = DATA_TYPE_IPV4;
-        else
-            cr->location_ext.ip_type = DATA_TYPE_IPV6;
-    }
     print_ip(cr->location_ext.ip_addr, cr->location_ext.ip_type);
 }
 
@@ -70,7 +62,7 @@ void print_location_resp(struct location_rsp_t *cr) {
 
     printf("Device MAC: ");
     for (i = 0; i < 6; i++)
-        printf("%02X", cr->MAC[i]);
+        printf("%02X", cr->location_ext.mac[i]);
     printf("\n");
 
     switch (cr->payload_ext.payload.type) {

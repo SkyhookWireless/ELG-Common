@@ -17,6 +17,7 @@ extern "C" {
 
 #define SKY_PROTOCOL_VERSION    1
 
+#define MAC_SIZE                6
 #define IPV4_SIZE               4
 #define IPV6_SIZE               16
 
@@ -292,8 +293,12 @@ struct location_t {
 // extended location result
 struct location_ext_t {
 
-    uint8_t ip_type; // DATA_TYPE_IPV4 or DATA_TYPE_IPV6
-    uint8_t ip_addr[16]; // used for ipv4 (4 bytes) or ipv6 (16 bytes)
+    uint8_t mac_count;
+    uint8_t *mac;
+
+    uint8_t ip_count;
+    uint8_t ip_type;  // DATA_TYPE_IPV4 or DATA_TYPE_IPV6
+    uint8_t *ip_addr; // ipv4 (4 bytes) or ipv6 (16 bytes)
 
     uint8_t street_num_len;
     char *street_num;
@@ -356,7 +361,11 @@ struct location_rq_t {
     sky_rq_header_t header;
     sky_payload_ext_t payload_ext;
 
+    uint8_t mac_count;
     uint8_t MAC[6]; // client device MAC identifier
+
+    uint8_t ip_count;
+    uint8_t ip_type;
     uint8_t ip_addr[16]; // ipv4 or ipv6
 
     // wifi access points
@@ -405,8 +414,6 @@ struct location_rsp_t {
 
     sky_rsp_header_t header;
     sky_payload_ext_t payload_ext;
-
-    uint8_t MAC[6]; // client device MAC identifier
 
     //
     // additional attributes
