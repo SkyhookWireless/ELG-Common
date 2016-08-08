@@ -362,11 +362,11 @@ struct location_rq_t {
     sky_payload_ext_t payload_ext;
 
     uint8_t mac_count;
-    uint8_t MAC[6]; // client device MAC identifier
+    uint8_t *mac; // client device MAC identifier
 
     uint8_t ip_count;
     uint8_t ip_type;
-    uint8_t ip_addr[16]; // ipv4 or ipv6
+    uint8_t *ip_addr; // ipv4 or ipv6
 
     // wifi access points
     uint8_t ap_count;

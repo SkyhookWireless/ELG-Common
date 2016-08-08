@@ -101,7 +101,7 @@ void print_location_req(struct location_rq_t *cr) {
 
     printf("Device MAC: ");
     for (i = 0; i < 6; i++)
-        printf("%02X", cr->MAC[i]);
+        printf("%02X", cr->mac[i]);
     printf("\n");
 
     printf("Access points %d\n", cr->ap_count);

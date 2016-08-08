@@ -174,14 +174,13 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case DATA_TYPE_MAC:
             creq->mac_count = p_entry_ex->entry->data_type_count;
             sz = MAC_SIZE * p_entry_ex->entry->data_type_count;
-            memcpy(creq->MAC, p_entry_ex->data, sz);
+            creq->mac = p_entry_ex->data;
             break;
         case DATA_TYPE_IPV4:
             creq->ip_count = p_entry_ex->entry->data_type_count;
             creq->ip_type = DATA_TYPE_IPV4;
             sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
-            memset(creq->ip_addr, 0, sizeof(creq->ip_addr));
-            memcpy(creq->ip_addr, p_entry_ex->data, sz);
+            creq->ip_addr = p_entry_ex->data;
             break;
         case DATA_TYPE_AP:
             creq->ap_count = p_entry_ex->entry->data_type_count;
@@ -312,7 +311,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ext.mac_count > 0) {
+        if (cresp->location_ext.ip_count > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
             p_entry_ex->entry->data_type_count = cresp->location_ext.ip_count;
             memcpy(p_entry_ex->data, cresp->location_ext.ip_addr, p_entry_ex->entry->data_type_count);
@@ -420,8 +419,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     }
 
     uint32_t payload_length = sizeof(sky_payload_t);
-    payload_length += sizeof(sky_entry_t) + sizeof(creq->MAC)
-            + sizeof(sky_entry_t) + sky_get_ipaddr_len(creq);
+    payload_length += sizeof(sky_entry_t) + MAC_SIZE + sizeof(sky_entry_t) + IPV4_SIZE;
 
     uint8_t acnt = creq->ap_count;
     uint8_t bcnt = creq->ble_count;
@@ -477,7 +475,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         p_entry_ex->entry->data_type = DATA_TYPE_MAC;
         p_entry_ex->entry->data_type_count = 1;
         sz = MAC_SIZE * p_entry_ex->entry->data_type_count;
-        memcpy(p_entry_ex->data, creq->MAC, sz);
+        memcpy(p_entry_ex->data, creq->mac, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
     // IPv4
