@@ -300,10 +300,10 @@ struct location_t {
 // extended location result
 struct location_ext_t {
 
-    uint8_t mac_count;
+    uint8_t mac_len;
     uint8_t *mac;
 
-    uint8_t ip_count;
+    uint8_t ip_len;
     uint8_t ip_type;  // DATA_TYPE_IPV4 or DATA_TYPE_IPV6
     uint8_t *ip_addr; // ipv4 (4 bytes) or ipv6 (16 bytes)
 
@@ -368,10 +368,10 @@ struct location_rq_t {
     sky_rq_header_t header;
     sky_payload_ext_t payload_ext;
 
-    uint8_t mac_count;
-    uint8_t *mac; // client device MAC identifier
+    uint8_t mac_count; // count of MAC address
+    uint8_t *mac;      // client device MAC identifier
 
-    uint8_t ip_count;
+    uint8_t ip_count; // count of IP address
     uint8_t ip_type;
     uint8_t *ip_addr; // ipv4 or ipv6
 

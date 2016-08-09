@@ -243,10 +243,10 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     // count bytes of data entries
     payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
     if (cresp->payload_ext.payload.type == LOCATION_RQ_ADDR_SUCCESS) {
-        if (cresp->location_ext.mac_count > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ext.mac_count;
-        if (cresp->location_ext.ip_count > 0)
-            payload_length += sizeof(sky_entry_t) + cresp->location_ext.ip_count;
+        if (cresp->location_ext.mac_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.mac_len;
+        if (cresp->location_ext.ip_len > 0)
+            payload_length += sizeof(sky_entry_t) + cresp->location_ext.ip_len;
         if (cresp->location_ext.street_num_len > 0)
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.street_num_len;
         if (cresp->location_ext.address_len > 0)
@@ -304,16 +304,16 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
         memcpy(p_entry_ex->data, &cresp->location, sizeof(cresp->location));
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
 
-        if (cresp->location_ext.mac_count > 0) {
+        if (cresp->location_ext.mac_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_MAC;
-            p_entry_ex->entry->data_type_count = cresp->location_ext.mac_count;
+            p_entry_ex->entry->data_type_count = cresp->location_ext.mac_len;
             memcpy(p_entry_ex->data, cresp->location_ext.mac, p_entry_ex->entry->data_type_count);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
 
-        if (cresp->location_ext.ip_count > 0) {
+        if (cresp->location_ext.ip_len > 0) {
             p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
-            p_entry_ex->entry->data_type_count = cresp->location_ext.ip_count;
+            p_entry_ex->entry->data_type_count = cresp->location_ext.ip_len;
             memcpy(p_entry_ex->data, cresp->location_ext.ip_addr, p_entry_ex->entry->data_type_count);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
         }
@@ -473,7 +473,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     // MAC
     {
         p_entry_ex->entry->data_type = DATA_TYPE_MAC;
-        p_entry_ex->entry->data_type_count = 1;
+        p_entry_ex->entry->data_type_count = creq->mac_count;
         sz = MAC_SIZE * p_entry_ex->entry->data_type_count;
         memcpy(p_entry_ex->data, creq->mac, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
@@ -481,7 +481,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     // IPv4
     {
         p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
-        p_entry_ex->entry->data_type_count = 1;
+        p_entry_ex->entry->data_type_count = creq->ip_count;
         sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
         memcpy(p_entry_ex->data, creq->ip_addr, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
@@ -576,17 +576,17 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
     while (payload_offset < cresp->header.payload_length) {
         switch (p_entry_ex->entry->data_type) {
         case DATA_TYPE_MAC:
-            cresp->location_ext.mac_count = p_entry_ex->entry->data_type_count;
+            cresp->location_ext.mac_len = p_entry_ex->entry->data_type_count;
             cresp->location_ext.mac = p_entry_ex->data;
             break;
         case DATA_TYPE_IPV4:
             cresp->location_ext.ip_type = DATA_TYPE_IPV4;
-            cresp->location_ext.ip_count = p_entry_ex->entry->data_type_count;
+            cresp->location_ext.ip_len = p_entry_ex->entry->data_type_count;
             cresp->location_ext.ip_addr = p_entry_ex->data;
             break;
         case DATA_TYPE_IPV6:
             cresp->location_ext.ip_type = DATA_TYPE_IPV6;
-            cresp->location_ext.ip_count = p_entry_ex->entry->data_type_count;
+            cresp->location_ext.ip_len = p_entry_ex->entry->data_type_count;
             cresp->location_ext.ip_addr = p_entry_ex->data;
             break;
         case DATA_TYPE_LAT_LON:
