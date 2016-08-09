@@ -52,8 +52,7 @@ void print_location_rq_addr(struct location_rsp_t* cr) {
 void print_location_resp(struct location_rsp_t *cr) {
     int32_t i;
     uint64_t timestamp = 0;
-    uint8_t * p_timestamp = (uint8_t *)&timestamp;
-    memcpy(p_timestamp + 2, cr->payload_ext.payload.timestamp, sizeof(cr->payload_ext.payload.timestamp));
+    memcpy((uint8_t *)&timestamp, cr->payload_ext.payload.timestamp, sizeof(cr->payload_ext.payload.timestamp));
     printf("\n");
     printf("timestamp: %lu\n", timestamp);
     printf("protocol: %d\n", cr->header.version);
