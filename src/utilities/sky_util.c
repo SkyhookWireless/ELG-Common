@@ -48,7 +48,7 @@ int32_t trim(char *str, int32_t slen, int32_t *end) {
  slen -- input string len
  dest -- pointer to target buffer
  destlen -- target buffer size
- return -- trimmed string lenght or error
+ return -- trimmed string length or error
  copies the trimmed string into the dest buffer
  */
 int32_t trimc(char *dest, int32_t destlen, char *str, int32_t slen) {
