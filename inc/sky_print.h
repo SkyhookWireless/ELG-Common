@@ -12,9 +12,9 @@ extern "C" {
 #ifndef SKY_PRINT_H
 #define SKY_PRINT_H
 
-void print_location_resp(struct location_resp_t *cr);
+void print_location_resp(struct location_rsp_t *cr);
 
-void print_location_req(struct location_req_t *cr);
+void print_location_req(struct location_rq_t *cr);
 
 #endif
 
