@@ -46,7 +46,11 @@ void print_location_rq_addr(struct location_rsp_t* cr) {
     printf("metro2: ");
     print_s(cr->location_ext.metro2, cr->location_ext.metro2_len);
     printf("ip: ");
-    print_ip(cr->location_ext.ip_addr, cr->location_ext.ip_type);
+    if (cr->location_ext.ip_len > 0) {
+        print_ip(cr->location_ext.ip_addr, cr->location_ext.ip_type);
+    } else {
+        printf("n/a\n");
+    }
 }
 
 void print_location_resp(struct location_rsp_t *cr) {
@@ -99,8 +103,12 @@ void print_location_req(struct location_rq_t *cr) {
     printf("userid: %d\n", cr->key.userid);
 
     printf("Device MAC: ");
-    for (i = 0; i < 6; i++)
-        printf("%02X", cr->mac[i]);
+    if (cr->mac_count > 0) {
+        for (i = 0; i < 6; i++)
+            printf("%02X", cr->mac[i]);
+    } else {
+        printf("n/a");
+    }
     printf("\n");
 
     printf("Access points %d\n", cr->ap_count);

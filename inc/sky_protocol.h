@@ -15,6 +15,8 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <netinet/in.h>
+#include <endian.h>
+#include <byteswap.h>
 
 #define SKY_PROTOCOL_VERSION    1
 
@@ -44,14 +46,39 @@ extern "C" {
                             SKY_PROT_RQ_BUFF_LEN : SKY_PROT_RSP_BUFF_LEN)
 
 #ifndef ENOBUFS
-#define ENOBUFS (ENOMEM)
+    #define ENOBUFS (ENOMEM)
 #endif
 
 // get a local (uint8_t *) buffer with size s and the starting memory address
 // being aligned at uint32_t boundary.
-#define SKY_LOCAL_BYTE_BUFF_32(b,s)   uint32_t sky____local_buffer____sky[(s)>>2]; \
-                                      assert(sizeof(*b) == sizeof(uint8_t));       \
-                                      (b) = (uint8_t *)sky____local_buffer____sky;
+#define SKY_LOCAL_BYTE_BUFF_32(b,s)                                           \
+                            uint32_t sky____local_buffer____sky[(s)>>2];      \
+                            assert(sizeof(*b) == sizeof(uint8_t));            \
+                            (b) = (uint8_t *)sky____local_buffer____sky;
+
+#ifdef __BIG_ENDIAN__ // defined in <endian.h> by GNU C compilers
+    #define SKY_ENDIAN_SWAP(x)                                                \
+                           ({switch(sizeof(x)) {                              \
+                             case (sizeof(uint8_t)):                          \
+                                 break;                                       \
+                             case (sizeof(uint16_t)):                         \
+                                 (x) = __bswap_16(x);                         \
+                                 break;                                       \
+                             case (sizeof(uint32_t)):                         \
+                                 (x) = __bswap_32(x);                         \
+                                 break;                                       \
+                             case (sizeof(uint64_t)):                         \
+                                 (x) = __bswap_64(x);                         \
+                                 break;                                       \
+                             default:                                         \
+                                 perror("NOT C primitive types!");            \
+                                 assert(false);                               \
+                                 break;                                       \
+                             }})
+#else
+    #define SKY_ENDIAN_SWAP(x) // do nothing
+#endif
+
 
 // stored in one byte
 enum SKY_DATA_TYPE {
@@ -219,6 +246,7 @@ struct gsm_t {
     uint8_t unused; // padding byte
 };
 
+// 64-bit aligned due to double
 struct cdma_t {
     double lat;
     double lon;
@@ -227,7 +255,7 @@ struct cdma_t {
     uint16_t nid;
     uint16_t bsid;
     int8_t rssi;
-    uint8_t unused; // padding byte
+    uint8_t unused[5]; // padding bytes
 };
 
 struct umts_t {
@@ -256,6 +284,7 @@ union cell_t {
     struct lte_t lte;
 };
 
+// 64-bit aligned due to double
 struct gps_t {
     double lat;
     double lon;
@@ -265,7 +294,7 @@ struct gps_t {
     uint32_t age; // last seen in ms
     uint8_t nsat;
     uint8_t fix;
-    uint8_t unused[2]; // padding bytes
+    uint8_t unused[6]; // padding bytes
 };
 
 // blue tooth

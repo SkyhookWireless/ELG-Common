@@ -34,6 +34,95 @@ bool adjust_data_entry(const uint8_t * buff, uint32_t buff_len, uint32_t offset,
     return true;
 }
 
+inline
+void sky_header_endian_swap(uint8_t * p_header, uint32_t header_len) {
+    assert(p_header != NULL);
+    switch (header_len) {
+    case (sizeof(sky_rq_header_t)): {
+        sky_rq_header_t * p = (sky_rq_header_t *)p_header;
+        SKY_ENDIAN_SWAP(p->payload_length);
+        SKY_ENDIAN_SWAP(p->user_id);
+        (void)p; // suppress warning [-Werror=unused-variable]
+        break;
+    }
+    case (sizeof(sky_rsp_header_t)): {
+        sky_rsp_header_t * p = (sky_rsp_header_t *)p_header;
+        SKY_ENDIAN_SWAP(p->payload_length);
+        (void)p; // suppress warning [-Werror=unused-variable]
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+inline
+void sky_gsm_endian_swap(struct gsm_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->ci);
+    SKY_ENDIAN_SWAP(p->age);
+    SKY_ENDIAN_SWAP(p->mcc);
+    SKY_ENDIAN_SWAP(p->mnc);
+    SKY_ENDIAN_SWAP(p->lac);
+}
+
+inline
+void sky_cdma_endian_swap(struct cdma_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->lat);
+    SKY_ENDIAN_SWAP(p->lon);
+    SKY_ENDIAN_SWAP(p->age);
+    SKY_ENDIAN_SWAP(p->sid);
+    SKY_ENDIAN_SWAP(p->nid);
+    SKY_ENDIAN_SWAP(p->bsid);
+}
+
+inline
+void sky_umts_endian_swap(struct umts_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->ci);
+    SKY_ENDIAN_SWAP(p->age);
+    SKY_ENDIAN_SWAP(p->mcc);
+    SKY_ENDIAN_SWAP(p->mnc);
+    SKY_ENDIAN_SWAP(p->lac);
+}
+
+inline
+void sky_lte_endian_swap(struct lte_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->age);
+    SKY_ENDIAN_SWAP(p->eucid);
+    SKY_ENDIAN_SWAP(p->mcc);
+    SKY_ENDIAN_SWAP(p->mnc);
+}
+
+inline
+void sky_gps_endian_swap(struct gps_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->lat);
+    SKY_ENDIAN_SWAP(p->lon);
+    SKY_ENDIAN_SWAP(p->alt);
+    SKY_ENDIAN_SWAP(p->hpe);
+    SKY_ENDIAN_SWAP(p->speed);
+    SKY_ENDIAN_SWAP(p->age);
+}
+
+inline
+void sky_ble_endian_swap(struct ble_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->major);
+    SKY_ENDIAN_SWAP(p->minor);
+}
+
+inline
+void sky_location_endian_swap(struct location_t * p) {
+    assert(p != NULL);
+    SKY_ENDIAN_SWAP(p->lat);
+    SKY_ENDIAN_SWAP(p->lon);
+    SKY_ENDIAN_SWAP(p->hpe);
+    SKY_ENDIAN_SWAP(p->distance_to_point);
+}
+
 // Return header by parameter "header & h".
 inline
 bool sky_get_header(const uint8_t * buff, uint32_t buff_len, uint8_t * p_header, uint32_t header_len) {
@@ -42,6 +131,9 @@ bool sky_get_header(const uint8_t * buff, uint32_t buff_len, uint8_t * p_header,
         return false;
     }
     memcpy(p_header, buff, header_len);
+#ifdef __BIG_ENDIAN__
+    sky_header_endian_swap(p_header, header_len);
+#endif
     return true;
 }
 
@@ -68,6 +160,7 @@ bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint8_t header
         return false;
     }
     sky_checksum_t cs = *(sky_checksum_t *)(buff + header_len + payload_len); // little endianness
+    SKY_ENDIAN_SWAP(cs);
     if (cs == fletcher16(buff, header_len + payload_len))
         return 1;
     else {
@@ -78,11 +171,14 @@ bool sky_verify_checksum(const uint8_t * buff, uint32_t buff_len, uint8_t header
 
 // Set header in parameter "uint8_t * buff".
 inline
-bool sky_set_header(uint8_t * buff, uint32_t buff_len, const uint8_t * p_header, uint32_t header_len) {
+bool sky_set_header(uint8_t * buff, uint32_t buff_len, uint8_t * p_header, uint32_t header_len) {
     if (buff_len < header_len) {
         perror("buffer too small");
         return false;
     }
+#ifdef __BIG_ENDIAN__
+    sky_header_endian_swap(p_header, header_len);
+#endif
     memcpy(buff, p_header, header_len);
     return true;
 }
@@ -111,6 +207,7 @@ bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint8_t header_len, uin
         return false;
     }
     sky_checksum_t cs = fletcher16(buff, header_len + payload_len);
+    SKY_ENDIAN_SWAP(cs);
     *(sky_checksum_t *)(buff + header_len + payload_len) = cs; // little endianness
     return true;
 }
@@ -191,35 +288,53 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
             creq->ble_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct ble_t) * p_entry_ex->entry->data_type_count;
             creq->bles = (struct ble_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_ble_endian_swap(creq->bles);
+#endif
             break;
         case DATA_TYPE_GSM:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_GSM;
             sz = sizeof(struct gsm_t) * p_entry_ex->entry->data_type_count;
             creq->gsm = (struct gsm_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_gsm_endian_swap(creq->gsm);
+#endif
             break;
         case DATA_TYPE_CDMA:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_CDMA;
             sz = sizeof(struct cdma_t) * p_entry_ex->entry->data_type_count;
             creq->cdma = (struct cdma_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_cdma_endian_swap(creq->cdma);
+#endif
             break;
         case DATA_TYPE_UMTS:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_UMTS;
             sz = sizeof(struct umts_t) * p_entry_ex->entry->data_type_count;
             creq->umts = (struct umts_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_umts_endian_swap(creq->umts);
+#endif
             break;
         case DATA_TYPE_LTE:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_LTE;
             sz = sizeof(struct lte_t) * p_entry_ex->entry->data_type_count;
             creq->lte = (struct lte_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_lte_endian_swap(creq->lte);
+#endif
             break;
         case DATA_TYPE_GPS:
             creq->gps_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct gps_t) * p_entry_ex->entry->data_type_count;
             creq->gps = (struct gps_t *)p_entry_ex->data;
+#ifdef __BIG_ENDIAN__
+            sky_gps_endian_swap(creq->gps);
+#endif
             break;
         case DATA_TYPE_PAD:
             return 0; // success
@@ -287,6 +402,10 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
         return -1;
 
     // fill in data entries in place in buffer
+
+#ifdef __BIG_ENDIAN__
+    sky_location_endian_swap(&cresp->location);
+#endif
 
     // latitude and longitude
     if (cresp->payload_ext.payload.type == LOCATION_RQ_SUCCESS) {
@@ -499,6 +618,9 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         p_entry_ex->entry->data_type = DATA_TYPE_BLE;
         p_entry_ex->entry->data_type_count = bcnt;
         sz = sizeof(struct ble_t) * bcnt;
+#ifdef __BIG_ENDIAN__
+        sky_ble_endian_swap(creq->bles);
+#endif
         memcpy(p_entry_ex->data, creq->bles, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
@@ -509,18 +631,30 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         switch (creq->cell_type) {
         case DATA_TYPE_GSM:
             sz = sizeof(struct gsm_t) * ccnt;
+#ifdef __BIG_ENDIAN__
+            sky_gsm_endian_swap(&creq->cell->gsm);
+#endif
             memcpy(p_entry_ex->data, &creq->cell->gsm, sz);
             break;
         case DATA_TYPE_LTE:
             sz = sizeof(struct lte_t) * ccnt;
+#ifdef __BIG_ENDIAN__
+            sky_lte_endian_swap(&creq->cell->lte);
+#endif
             memcpy(p_entry_ex->data, &creq->cell->lte, sz);
             break;
         case DATA_TYPE_CDMA:
             sz = sizeof(struct cdma_t) * ccnt;
+#ifdef __BIG_ENDIAN__
+            sky_cdma_endian_swap(&creq->cell->cdma);
+#endif
             memcpy(p_entry_ex->data, &creq->cell->cdma, sz);
             break;
         case DATA_TYPE_UMTS:
             sz = sizeof(struct umts_t) * ccnt;
+#ifdef __BIG_ENDIAN__
+            sky_umts_endian_swap(&creq->cell->umts);
+#endif
             memcpy(p_entry_ex->data, &creq->cell->umts, sz);
             break;
         default:
@@ -534,6 +668,9 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         p_entry_ex->entry->data_type = DATA_TYPE_GPS;
         p_entry_ex->entry->data_type_count = gcnt;
         sz = sizeof(struct gps_t) * gcnt;
+#ifdef __BIG_ENDIAN__
+        sky_gps_endian_swap(creq->gps);
+#endif
         memcpy(p_entry_ex->data, creq->gps, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
@@ -590,6 +727,9 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
             cresp->location_ext.ip_addr = p_entry_ex->data;
             break;
         case DATA_TYPE_LAT_LON:
+#ifdef __BIG_ENDIAN__
+            sky_location_endian_swap(&cresp->location);
+#endif
             memcpy(&cresp->location, p_entry_ex->data, p_entry_ex->entry->data_type_count);
             break;
         case DATA_TYPE_STREET_NUM:
