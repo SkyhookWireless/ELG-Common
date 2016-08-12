@@ -11,9 +11,7 @@
 #include <sky_crypt.h>
 
 #include "mauth.h"
-#include "aes_th.h"
-
-static pthread_mutex_t lock;
+#include "aes.h"
 
 // iv must be 16 byte long
 void sky_gen_iv(uint8_t *iv) {
@@ -29,11 +27,7 @@ void sky_gen_iv(uint8_t *iv) {
 
     unsigned char iv__[HMAC_SIZE];
     memset(iv__, 0, HMAC_SIZE);
-
-    pthread_mutex_lock(&lock);
     hmac(key, KEY_SIZE, mes, iv__);
-    pthread_mutex_unlock(&lock);
-
     memcpy(iv, iv__, IV_SIZE);
 }
 
@@ -46,11 +40,8 @@ int32_t sky_aes_encrypt(uint8_t *data, uint32_t data_len, uint8_t *key,
     }
 
     uint8_t output[data_len];
-    pthread_mutex_lock(&lock);
     AES128_CBC_encrypt_buffer(output, data, data_len, key, iv);
-    pthread_mutex_unlock(&lock);
     memcpy(data, output, data_len);
-
     return 0;
 }
 
@@ -63,11 +54,8 @@ int32_t sky_aes_decrypt(uint8_t *data, uint32_t data_len, uint8_t *key,
     }
 
     uint8_t output[data_len];
-    pthread_mutex_lock(&lock);
     AES128_CBC_decrypt_buffer(output, data, data_len, key, iv);
-    pthread_mutex_unlock(&lock);
     memcpy(data, output, data_len);
-
     return 0;
 }
 
