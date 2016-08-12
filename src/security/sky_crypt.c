@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <sky_crypt.h>
 
-#include "mauth.hpp"
+#include "mauth.h"
 #include "aes_th.h"
 
 static pthread_mutex_t lock;
