@@ -135,7 +135,7 @@ enum SKY_RSP_PAYLOAD_TYPE {
 
 // internal error codes
 enum SKY_STATUS {
-    OK = 0,
+    SKY_OK = 0,
     ZLOG_INIT_PERM,
     ZLOG_INIT_ERR,
     LOAD_CONFIG_FAILED,
