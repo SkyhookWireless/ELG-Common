@@ -14,9 +14,9 @@ extern "C" {
 
 #include <assert.h>
 #include <inttypes.h>
-#include <netinet/in.h>
-#include <endian.h>
-#include <byteswap.h>
+#include <netinet/in.h>   // remove if not existing, "struct relay_t" will become useless.
+#include <endian.h>       // remove if not existing
+#include <byteswap.h>     // remove if not existing
 
 #define SKY_PROTOCOL_VERSION    1
 
@@ -56,19 +56,40 @@ extern "C" {
                             assert(sizeof(*b) == sizeof(uint8_t));            \
                             (b) = (uint8_t *)sky____local_buffer____sky;
 
+#ifndef _BYTESWAP_H // defined in <byteswap.h>
+    #define __sky_bswap_16(x)                                                 \
+         ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)))
+    #define __sky_bswap_32(x)                                                 \
+         ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8)             \
+        | (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
+    #define __sky_bswap_64(x)                                                 \
+         ((((x) & 0xff00000000000000ull) >> 56)                               \
+        | (((x) & 0x00ff000000000000ull) >> 40)                               \
+        | (((x) & 0x0000ff0000000000ull) >> 24)                               \
+        | (((x) & 0x000000ff00000000ull) >> 8)                                \
+        | (((x) & 0x00000000ff000000ull) << 8)                                \
+        | (((x) & 0x0000000000ff0000ull) << 24)                               \
+        | (((x) & 0x000000000000ff00ull) << 40)                               \
+        | (((x) & 0x00000000000000ffull) << 56))
+#else
+    #define __sky_bswap_16(x)       __bswap_16(x)
+    #define __sky_bswap_32(x)       __bswap_32(x)
+    #define __sky_bswap_64(x)       __bswap_64(x)
+#endif
+
 #ifdef __BIG_ENDIAN__ // defined in <endian.h> by GNU C compilers
     #define SKY_ENDIAN_SWAP(x)                                                \
                            ({switch(sizeof(x)) {                              \
                              case (sizeof(uint8_t)):                          \
                                  break;                                       \
                              case (sizeof(uint16_t)):                         \
-                                 (x) = __bswap_16(x);                         \
+                                 (x) = __sky_bswap_16(x);                     \
                                  break;                                       \
                              case (sizeof(uint32_t)):                         \
-                                 (x) = __bswap_32(x);                         \
+                                 (x) = __sky_bswap_32(x);                     \
                                  break;                                       \
                              case (sizeof(uint64_t)):                         \
-                                 (x) = __bswap_64(x);                         \
+                                 (x) = __sky_bswap_64(x);                     \
                                  break;                                       \
                              default:                                         \
                                  perror("NOT C primitive types!");            \
@@ -373,6 +394,10 @@ struct location_ext_t {
 //
 // client application data types
 //
+
+#ifndef _NETINET_IN_H // defined in <netinet/in.h>
+    struct sockaddr_in {}; // syntactic sugar to allow "struct relay_t".
+#endif
 
 // relay setting for echoing the location results
 struct relay_t {
