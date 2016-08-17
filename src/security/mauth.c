@@ -4,7 +4,7 @@
  * Company: Skyhook Wireless
  *
  ************************************************/
-#include <mauth.h>
+#include "mauth.h"
 
 #define IN_PAD 0x36
 #define OUT_PAD 0x5C

@@ -8,8 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <sky_crypt.h>
-
+#include "sky_crypt.h"
 #include "mauth.h"
 #include "aes.h"
 

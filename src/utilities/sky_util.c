@@ -11,8 +11,8 @@
 #include <time.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <sky_protocol.h>
-#include <sky_util.h>
+#include "sky_protocol.h"
+#include "sky_util.h"
 
 /* str -- string to be trimmed
  slen -- lenght of str
