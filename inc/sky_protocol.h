@@ -456,15 +456,6 @@ struct location_rq_t {
     // http server settings
     char *http_url;
     char *http_uri;
-
-    //
-    // reserved for elg server use
-    //
-
-    struct gsm_t *gsm;
-    struct cdma_t *cdma;
-    struct lte_t *lte;
-    struct umts_t *umts;
 };
 
 struct location_rsp_t {

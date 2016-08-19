@@ -296,36 +296,36 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_GSM;
             sz = sizeof(struct gsm_t) * p_entry_ex->entry->data_type_count;
-            creq->gsm = (struct gsm_t *)p_entry_ex->data;
+            creq->cell = (union cell_t *)p_entry_ex->data;
 #ifdef __BIG_ENDIAN__
-            sky_gsm_endian_swap(creq->gsm);
+            sky_gsm_endian_swap(&creq->cell->gsm);
 #endif
             break;
         case DATA_TYPE_CDMA:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_CDMA;
             sz = sizeof(struct cdma_t) * p_entry_ex->entry->data_type_count;
-            creq->cdma = (struct cdma_t *)p_entry_ex->data;
+            creq->cell = (union cell_t *)p_entry_ex->data;
 #ifdef __BIG_ENDIAN__
-            sky_cdma_endian_swap(creq->cdma);
+            sky_cdma_endian_swap(&creq->cell->cdma);
 #endif
             break;
         case DATA_TYPE_UMTS:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_UMTS;
             sz = sizeof(struct umts_t) * p_entry_ex->entry->data_type_count;
-            creq->umts = (struct umts_t *)p_entry_ex->data;
+            creq->cell = (union cell_t *)p_entry_ex->data;
 #ifdef __BIG_ENDIAN__
-            sky_umts_endian_swap(creq->umts);
+            sky_umts_endian_swap(&creq->cell->umts);
 #endif
             break;
         case DATA_TYPE_LTE:
             creq->cell_count = p_entry_ex->entry->data_type_count;
             creq->cell_type = DATA_TYPE_LTE;
             sz = sizeof(struct lte_t) * p_entry_ex->entry->data_type_count;
-            creq->lte = (struct lte_t *)p_entry_ex->data;
+            creq->cell = (union cell_t *)p_entry_ex->data;
 #ifdef __BIG_ENDIAN__
-            sky_lte_endian_swap(creq->lte);
+            sky_lte_endian_swap(&creq->cell->lte);
 #endif
             break;
         case DATA_TYPE_GPS:
