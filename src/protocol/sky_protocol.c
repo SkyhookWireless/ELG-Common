@@ -356,8 +356,12 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     uint32_t payload_length = sizeof(sky_payload_t);
 
     // count bytes of data entries
-    payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
-    if (cresp->payload_ext.payload.type == LOCATION_RQ_ADDR_SUCCESS) {
+    switch (cresp->payload_ext.payload.type) {
+    case LOCATION_RQ_SUCCESS:
+        payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
+        break;
+    case LOCATION_RQ_ADDR_SUCCESS:
+        payload_length += sizeof(sky_entry_t) + sizeof(struct location_t); // latitude and longitude
         if (cresp->location_ext.mac_len > 0)
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.mac_len;
         if (cresp->location_ext.ip_len > 0)
@@ -384,6 +388,10 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.country_len;
         if (cresp->location_ext.country_code_len > 0)
             payload_length += sizeof(sky_entry_t) + cresp->location_ext.country_code_len;
+        break;
+    default: // i.e. PROBE_REQUEST_SUCCESS, LOCATION_RQ_ERROR, LOCATION_GATEWAY_ERROR, LOCATION_API_ERROR, etc.
+        // no data entry in payload so far
+        break;
     }
 
     // payload length must be a multiple of 16 bytes
@@ -702,8 +710,17 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 
     if (cresp->payload_ext.payload.type != LOCATION_RQ_SUCCESS
             && cresp->payload_ext.payload.type != LOCATION_RQ_ADDR_SUCCESS) {
-        fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
-        return -1;
+
+        switch (cresp->payload_ext.payload.type) {
+        case PROBE_REQUEST_SUCCESS:
+        case LOCATION_RQ_ERROR:
+        case LOCATION_GATEWAY_ERROR:
+        case LOCATION_API_ERROR:
+            return 0; // success
+        default:
+            fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
+            return -1;
+        }
     }
 
     // read data entries from buffer
