@@ -14,6 +14,12 @@
 #include "sky_print.h"
 
 void print_location_rq(struct location_rsp_t* cr) {
+    uint8_t i;
+    printf("Device MAC: ");
+    for (i = 0; i < 6; i++)
+        printf("%02X", cr->location_ext.mac[i]);
+    printf("\n");
+
     puts("LOCATION_RQ");
     printf("latitude: %f\n", cr->location.lat);
     printf("longitude: %f\n", cr->location.lon);
@@ -22,6 +28,12 @@ void print_location_rq(struct location_rsp_t* cr) {
 }
 
 void print_location_rq_addr(struct location_rsp_t* cr) {
+    uint8_t i;
+    printf("Device MAC: ");
+    for (i = 0; i < 6; i++)
+        printf("%02X", cr->location_ext.mac[i]);
+    printf("\n");
+
     puts("LOCATION_RQ_ADDR");
     printf("street num: ");
     print_s(cr->location_ext.street_num, cr->location_ext.street_num_len);
@@ -54,7 +66,6 @@ void print_location_rq_addr(struct location_rsp_t* cr) {
 }
 
 void print_location_resp(struct location_rsp_t *cr) {
-    int32_t i;
     uint64_t timestamp = 0;
     memcpy((uint8_t *)&timestamp, cr->payload_ext.payload.timestamp, sizeof(cr->payload_ext.payload.timestamp));
     printf("\n");
@@ -62,11 +73,6 @@ void print_location_resp(struct location_rsp_t *cr) {
     printf("protocol: %d\n", cr->header.version);
     printf("server version: %d\n", cr->payload_ext.payload.sw_version);
     printf("payload type no: %d\n", cr->payload_ext.payload.type);
-
-    printf("Device MAC: ");
-    for (i = 0; i < 6; i++)
-        printf("%02X", cr->location_ext.mac[i]);
-    printf("\n");
 
     switch (cr->payload_ext.payload.type) {
     case LOCATION_RQ_SUCCESS:
