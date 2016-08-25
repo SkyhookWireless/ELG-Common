@@ -14,12 +14,6 @@
 #include "sky_print.h"
 
 void print_location_rq(struct location_rsp_t* cr) {
-    uint8_t i;
-    printf("Device MAC: ");
-    for (i = 0; i < 6; i++)
-        printf("%02X", cr->location_ext.mac[i]);
-    printf("\n");
-
     puts("LOCATION_RQ");
     printf("latitude: %f\n", cr->location.lat);
     printf("longitude: %f\n", cr->location.lon);
@@ -28,12 +22,15 @@ void print_location_rq(struct location_rsp_t* cr) {
 }
 
 void print_location_rq_addr(struct location_rsp_t* cr) {
-    uint8_t i;
     printf("Device MAC: ");
-    for (i = 0; i < 6; i++)
-        printf("%02X", cr->location_ext.mac[i]);
-    printf("\n");
-
+    if (cr->location_ext.mac_len > 0) {
+        uint8_t i;
+        for (i = 0; i < 6; i++)
+            printf("%02X", cr->location_ext.mac[i]);
+        printf("\n");
+    } else {
+        printf("n/a\n");
+    }
     puts("LOCATION_RQ_ADDR");
     printf("street num: ");
     print_s(cr->location_ext.street_num, cr->location_ext.street_num_len);
