@@ -279,6 +279,12 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
             sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
             creq->ip_addr = p_entry_ex->data;
             break;
+        case DATA_TYPE_IPV6:
+            creq->ip_count = p_entry_ex->entry->data_type_count;
+            creq->ip_type = DATA_TYPE_IPV6;
+            sz = IPV6_SIZE * p_entry_ex->entry->data_type_count;
+            creq->ip_addr = p_entry_ex->data;
+            break;
         case DATA_TYPE_AP:
             creq->ap_count = p_entry_ex->entry->data_type_count;
             sz = sizeof(struct ap_t) * p_entry_ex->entry->data_type_count;
@@ -439,7 +445,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
         }
 
         if (cresp->location_ext.ip_len > 0) {
-            p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
+            p_entry_ex->entry->data_type = cresp->location_ext.ip_type;
             p_entry_ex->entry->data_type_count = cresp->location_ext.ip_len;
             memcpy(p_entry_ex->data, cresp->location_ext.ip_addr, p_entry_ex->entry->data_type_count);
             adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + p_entry_ex->entry->data_type_count, p_entry_ex);
@@ -606,11 +612,19 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
         memcpy(p_entry_ex->data, creq->mac, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
-    // IPv4
-    {
+    // IP
+    if (creq->ip_type == DATA_TYPE_IPV4) {
+        // IPv4
         p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
         p_entry_ex->entry->data_type_count = creq->ip_count;
         sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
+        memcpy(p_entry_ex->data, creq->ip_addr, sz);
+        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
+    } else {
+        // IPv6
+        p_entry_ex->entry->data_type = DATA_TYPE_IPV6;
+        p_entry_ex->entry->data_type_count = creq->ip_count;
+        sz = IPV6_SIZE * p_entry_ex->entry->data_type_count;
         memcpy(p_entry_ex->data, creq->ip_addr, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
