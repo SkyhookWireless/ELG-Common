@@ -546,7 +546,8 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     }
 
     uint32_t payload_length = sizeof(sky_payload_t);
-    payload_length += sizeof(sky_entry_t) + MAC_SIZE + sizeof(sky_entry_t) + IPV4_SIZE;
+    payload_length += sizeof(sky_entry_t) + creq->mac_count * MAC_SIZE
+            + sizeof(sky_entry_t) + creq->ip_count * IPV4_SIZE;
 
     uint8_t acnt = creq->ap_count;
     uint8_t bcnt = creq->ble_count;
