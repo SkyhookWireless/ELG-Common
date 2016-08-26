@@ -14,11 +14,12 @@ extern "C" {
 
 #include <assert.h>
 #include <inttypes.h>
-#include <netinet/in.h>   // remove if not existing, "struct relay_t" will become useless.
 #include <endian.h>       // remove if not existing
 #include <byteswap.h>     // remove if not existing
 
 #define SKY_PROTOCOL_VERSION    1
+
+#define URL_SIZE                512
 
 #define MAC_SIZE                6
 #define IPV4_SIZE               4
@@ -404,13 +405,10 @@ struct location_ext_t {
 // client application data types
 //
 
-#ifndef _NETINET_IN_H // defined in <netinet/in.h>
-    struct sockaddr_in {}; // syntactic sugar to allow "struct relay_t".
-#endif
-
 // relay setting for echoing the location results
 struct relay_t {
-    struct sockaddr_in host;
+    char host[URL_SIZE];
+    uint16_t port;
     uint8_t valid;
 };
 
