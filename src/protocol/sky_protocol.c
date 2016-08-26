@@ -123,6 +123,35 @@ void sky_location_endian_swap(struct location_t * p) {
     SKY_ENDIAN_SWAP(p->distance_to_point);
 }
 
+inline
+bool check_rq_max_counts(const struct location_rq_t * p_rq) {
+    if (p_rq->mac_count > MAX_MACS) {
+        perror("Too big: mac_count > MAX_MACS");
+        return false;
+    }
+    if (p_rq->ip_count > MAX_IPS) {
+        perror("Too big: ip_count > MAX_IPS");
+        return false;
+    }
+    if (p_rq->ap_count > MAX_APS) {
+        perror("Too big: ap_count > MAX_APS");
+        return false;
+    }
+    if (p_rq->cell_count > MAX_CELLS) {
+        perror("Too big: cell_count > MAX_CELLS");
+        return false;
+    }
+    if (p_rq->gps_count > MAX_GPSS) {
+        perror("Too big: gps_count > MAX_GPSS");
+        return false;
+    }
+    if (p_rq->ble_count > MAX_BLES) {
+        perror("Too big: ble_count > MAX_BLES");
+        return false;;
+    }
+    return true;
+}
+
 // Return header by parameter "header & h".
 inline
 bool sky_get_header(const uint8_t * buff, uint32_t buff_len, uint8_t * p_header, uint32_t header_len) {
@@ -545,6 +574,9 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 // returns the packet len or -1 when fails
 int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
+    if (!check_rq_max_counts(creq))
+        return -1;
+
     if (creq->payload_ext.payload.type != LOCATION_RQ
             && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
         fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_ext.payload.type);
@@ -552,20 +584,18 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     }
 
     uint32_t payload_length = sizeof(sky_payload_t);
-    payload_length += sizeof(sky_entry_t) + creq->mac_count * MAC_SIZE
-            + sizeof(sky_entry_t) + creq->ip_count * IPV4_SIZE;
-
-    uint8_t acnt = creq->ap_count;
-    uint8_t bcnt = creq->ble_count;
-    uint8_t ccnt = creq->cell_count;
-    uint8_t gcnt = creq->gps_count;
-    if (acnt > 0)
-        payload_length += sizeof(sky_entry_t) + acnt * sizeof(struct ap_t);
-    if (bcnt > 0)
-        payload_length += sizeof(sky_entry_t) + bcnt * sizeof(struct ble_t);
-    if (gcnt > 0)
-        payload_length += sizeof(sky_entry_t) + gcnt * sizeof(struct gps_t);
-    if (ccnt > 0) {
+    if (creq->mac_count > 0)
+        payload_length += sizeof(sky_entry_t) + creq->mac_count * MAC_SIZE;
+    if (creq->ip_count > 0)
+        payload_length += sizeof(sky_entry_t) +
+            creq->ip_count * (creq->ip_type == DATA_TYPE_IPV4 ? IPV4_SIZE : IPV6_SIZE);
+    if (creq->ap_count > 0)
+        payload_length += sizeof(sky_entry_t) + creq->ap_count * sizeof(struct ap_t);
+    if (creq->ble_count > 0)
+        payload_length += sizeof(sky_entry_t) + creq->ble_count * sizeof(struct ble_t);
+    if (creq->gps_count > 0)
+        payload_length += sizeof(sky_entry_t) + creq->gps_count * sizeof(struct gps_t);
+    if (creq->cell_count > 0) {
         uint32_t sz;
         switch (creq->cell_type) {
         case DATA_TYPE_GSM:
@@ -584,7 +614,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
             perror("unknown data type");
             return -1;
         }
-        payload_length += ccnt * sz + sizeof(sky_entry_t);
+        payload_length += creq->cell_count * sz + sizeof(sky_entry_t);
     }
 
     // payload length must be a multiple of 16 bytes
@@ -631,16 +661,16 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     // Access Point
     if (creq->ap_count > 0) {
         p_entry_ex->entry->data_type = DATA_TYPE_AP;
-        p_entry_ex->entry->data_type_count = acnt;
-        sz = sizeof(struct ap_t) * acnt;
+        p_entry_ex->entry->data_type_count = creq->ap_count;
+        sz = sizeof(struct ap_t) * creq->ap_count;
         memcpy(p_entry_ex->data, creq->aps, sz);
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
     // Blue Tooth
     if (creq->ble_count > 0) {
         p_entry_ex->entry->data_type = DATA_TYPE_BLE;
-        p_entry_ex->entry->data_type_count = bcnt;
-        sz = sizeof(struct ble_t) * bcnt;
+        p_entry_ex->entry->data_type_count = creq->ble_count;
+        sz = sizeof(struct ble_t) * creq->ble_count;
 #ifdef __BIG_ENDIAN__
         sky_ble_endian_swap(creq->bles);
 #endif
@@ -650,31 +680,31 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     // Cell
     if (creq->cell_count > 0) {
         p_entry_ex->entry->data_type = creq->cell_type;
-        p_entry_ex->entry->data_type_count = ccnt;
+        p_entry_ex->entry->data_type_count = creq->cell_count;
         switch (creq->cell_type) {
         case DATA_TYPE_GSM:
-            sz = sizeof(struct gsm_t) * ccnt;
+            sz = sizeof(struct gsm_t) * creq->cell_count;
 #ifdef __BIG_ENDIAN__
             sky_gsm_endian_swap(&creq->cell->gsm);
 #endif
             memcpy(p_entry_ex->data, &creq->cell->gsm, sz);
             break;
         case DATA_TYPE_LTE:
-            sz = sizeof(struct lte_t) * ccnt;
+            sz = sizeof(struct lte_t) * creq->cell_count;
 #ifdef __BIG_ENDIAN__
             sky_lte_endian_swap(&creq->cell->lte);
 #endif
             memcpy(p_entry_ex->data, &creq->cell->lte, sz);
             break;
         case DATA_TYPE_CDMA:
-            sz = sizeof(struct cdma_t) * ccnt;
+            sz = sizeof(struct cdma_t) * creq->cell_count;
 #ifdef __BIG_ENDIAN__
             sky_cdma_endian_swap(&creq->cell->cdma);
 #endif
             memcpy(p_entry_ex->data, &creq->cell->cdma, sz);
             break;
         case DATA_TYPE_UMTS:
-            sz = sizeof(struct umts_t) * ccnt;
+            sz = sizeof(struct umts_t) * creq->cell_count;
 #ifdef __BIG_ENDIAN__
             sky_umts_endian_swap(&creq->cell->umts);
 #endif
@@ -689,8 +719,8 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     // GPS
     if (creq->gps_count > 0) {
         p_entry_ex->entry->data_type = DATA_TYPE_GPS;
-        p_entry_ex->entry->data_type_count = gcnt;
-        sz = sizeof(struct gps_t) * gcnt;
+        p_entry_ex->entry->data_type_count = creq->gps_count;
+        sz = sizeof(struct gps_t) * creq->gps_count;
 #ifdef __BIG_ENDIAN__
         sky_gps_endian_swap(creq->gps);
 #endif

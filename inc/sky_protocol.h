@@ -24,23 +24,31 @@ extern "C" {
 #define IPV4_SIZE               4
 #define IPV6_SIZE               16
 
-#define MAX_AP                  100
-#define MAX_GPS                 2
-#define MAX_CELL                7
-#define MAX_BLE                 5
+#define MAX_MACS                2   // max # of mac addresses
+#define MAX_IPS                 2   // max # of ip addresses
 
+#define MAX_APS                 100 // max # of access points
+#define MAX_GPSS                2   // max # of gps
+#define MAX_CELLS               7   // max # of cells
+#define MAX_BLES                5   // max # of blue tooth
+
+// max # of bytes for request buffer
 #define SKY_PROT_RQ_BUFF_LEN                                                 \
     sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
-    + MAX_AP * (sizeof(sky_entry_t) + sizeof(struct ap_t))                   \
-    + MAX_GPS * (sizeof(sky_entry_t) + sizeof(struct gps_t))                 \
-    + MAX_CELL * (sizeof(sky_entry_t) + sizeof(union cell_t))                \
-    + MAX_BLE * (sizeof(sky_entry_t) + sizeof(struct ble_t))
+    + (sizeof(sky_entry_t) + MAX_MACS * MAC_SIZE)                            \
+    + (sizeof(sky_entry_t) + MAX_IPS * IPV6_SIZE)                            \
+    + (sizeof(sky_entry_t) + MAX_APS * sizeof(struct ap_t))                  \
+    + (sizeof(sky_entry_t) + MAX_GPSS * sizeof(struct gps_t))                \
+    + (sizeof(sky_entry_t) + MAX_CELLS * sizeof(union cell_t))               \
+    + (sizeof(sky_entry_t) + MAX_BLES * sizeof(struct ble_t))
 
+// max # of bytes for response buffer
 #define SKY_PROT_RSP_BUFF_LEN                                                 \
     sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
     + sizeof(struct location_t) + sizeof(struct location_ext_t)               \
     + 1024 // the char array of full address
 
+// max # of bytes for both request and response buffer
 #define SKY_PROT_BUFF_LEN                                                     \
                             ((SKY_PROT_RQ_BUFF_LEN > SKY_PROT_RSP_BUFF_LEN) ? \
                             SKY_PROT_RQ_BUFF_LEN : SKY_PROT_RSP_BUFF_LEN)
@@ -130,7 +138,7 @@ enum SKY_DATA_TYPE {
     DATA_TYPE_MAC,          // device MAC address
 };
 
-/* request payload types */
+// request payload types
 enum SKY_RQ_PAYLOAD_TYPE {
     REQ_PAYLOAD_TYPE_NONE = 0,  // initialization value
 
@@ -139,7 +147,7 @@ enum SKY_RQ_PAYLOAD_TYPE {
     PROBE_REQUEST,              // probe test
 };
 
-/* response payload types */
+// response payload types
 enum SKY_RSP_PAYLOAD_TYPE {
     RSP_PAYLOAD_TYPE_NONE = 0,  // initialization value
 
@@ -242,11 +250,12 @@ typedef uint16_t sky_checksum_t;
 // Note: all data types are explicitly padded for 32-bit alignment.
 //
 
-/* WARNING
- it is important to keep the order
- the larger size vars first in the structs
- because the compiler pads the struct to align
- to the largest size */
+/* WARNING:
+ * it is important to keep the order
+ * the larger size vars first in the structs
+ * because the compiler pads the struct to align
+ * to the largest size
+ */
 
 // access point
 // Note: Padding bytes will be appended at the end of the very last "struct ap_t",
