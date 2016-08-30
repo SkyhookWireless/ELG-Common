@@ -89,8 +89,8 @@ int32_t parse_key(char *line, struct sky_key_t *key, int32_t field_count) {
                 int32_t end;
                 int32_t start = trim(record, slen, &end);
                 char *url = &record[start];
-                memset(key->relay.host, 0, sizeof(key->relay.host));
-                strncpy(key->relay.host, url, strlen(url));
+                memset(key->relay.srv.host, 0, sizeof(key->relay.srv.host));
+                strncpy(key->relay.srv.host, url, strlen(url));
                 key->relay.valid = 1; // mark it valid
                 break;
             }
@@ -102,7 +102,7 @@ int32_t parse_key(char *line, struct sky_key_t *key, int32_t field_count) {
                     key->relay.valid = 0;
                     return PARSE_ERR_PORT;
                 }
-                key->relay.port = port;
+                key->relay.srv.port = port;
                 break;
             }
         }
@@ -266,11 +266,11 @@ void print_key(struct sky_key_t *k) {
     printf("relay ip: ");
 
     if (k->relay.valid)
-        printf("%s\n",k->relay.host);
+        printf("%s\n",k->relay.srv.host);
     else
         printf("\n");
 
-    printf("relay port: %d\n", k->relay.port);
+    printf("relay port: %d\n", k->relay.srv.port);
 }
 
 void walker(const void *node, const VISIT which, const int32_t depth) {

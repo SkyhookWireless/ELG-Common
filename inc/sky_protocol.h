@@ -169,7 +169,8 @@ enum SKY_STATUS {
     ZLOG_INIT_PERM,
     ZLOG_INIT_ERR,
     LOAD_CONFIG_FAILED,
-    HOST_UNKNOWN,
+    API_URL_UNKNOWN,
+    RELAY_URL_UNKNOWN,
     LOAD_KEYS_FAILED,
     BAD_KEY,
     CREATE_THREAD_FAILED,
@@ -405,10 +406,14 @@ struct location_ext_t {
 // client application data types
 //
 
-// relay setting for echoing the location results
-struct relay_t {
+struct sky_srv_t {
     char host[URL_SIZE];
     uint16_t port;
+};
+
+// relay setting for echoing the location results
+struct sky_relay_t {
+    struct sky_srv_t srv;
     uint8_t valid;
 };
 
@@ -417,7 +422,7 @@ struct sky_key_t {
     uint32_t userid;
     uint8_t aes_key[16];  // 128 bit aes key
     char keyid[128];      // api key
-    struct relay_t relay; // relay responses
+    struct sky_relay_t relay; // relay responses
 };
 
 struct location_rq_t {
