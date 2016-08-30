@@ -78,7 +78,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     const char cdma_lat[] = "<cdma-lat>%f</cdma-lat>\n";
     const char cdma_lon[] = "<cdma-lon>%f</cdma-lon>\n";
 
-    const char gps[] = "<gps-location fix=\"%d\" nsat=\"%d\">\n";
+    const char gps[] = "<gps-location fix=\"%d\" nsat=\"%d\" hdop=\"%f\">\n";
     const char gps_eof[] = "</gps-location>\n";
     const char lat[] = "<latitude>%f</latitude>\n";
     const char lon[] = "<longitude>%f</longitude>\n";
@@ -248,7 +248,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     }
 
     for (i = 0; i < creq->gps_count; i++) {
-        p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat);
+        p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat, creq->gps[i].hdop);
         p += sprintf(p, lat, creq->gps[i].lat);
         p += sprintf(p, lon, creq->gps[i].lon);
         p += sprintf(p, hpe, creq->gps[i].hpe);
@@ -469,6 +469,9 @@ char api_req_decode_gps(int32_t count,
         pe = strstr(ps, XML_TAG_GPSF);
         p = strstr(ps, XML_TAG_FIX);
         int32_t dval;
+        float fval;
+        double dfval;
+
         if (p != NULL && p < pe && sscanf(p, XML_TAG_FIXS, &dval) == 1)
             req->gps[req->gps_count].fix = (uint8_t) (dval);
         else
@@ -480,8 +483,13 @@ char api_req_decode_gps(int32_t count,
         else
             err_gps++;
 
+        p = strstr(ps, XML_TAG_HDOP);
+        if (p != NULL && p < pe && sscanf(p, XML_TAG_HDOPS, &fval) == 1)
+            req->gps[req->gps_count].hdop = fval;
+        else
+            err_gps++;
+
         p = strstr(ps, XML_TAG_LAT);
-        double dfval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LATS, &dfval) == 1)
             req->gps[req->gps_count].lat = dfval;
         else
@@ -494,7 +502,6 @@ char api_req_decode_gps(int32_t count,
             err_gps++;
 
         p = strstr(ps, XML_TAG_HPE);
-        float fval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_HPES, &fval) == 1)
             req->gps[req->gps_count].hpe = fval;
         else

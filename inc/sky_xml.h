@@ -51,7 +51,8 @@ extern "C" {
 #define XML_TAG_CDMA_LATS "<cdma-lat>%lf</cdma-lat>"
 #define XML_TAG_CDMA_LON "<cdma-lon>"
 #define XML_TAG_CDMA_LONS "<cdma-lon>%lf</cdma-lon>"
-#define XML_TAG_GPS "<gps-location>"
+// note: gps-location tag contains attributes in the scope of this tag.
+#define XML_TAG_GPS "<gps-location "
 #define XML_TAG_GPSF "</gps-location>"
 #define XML_TAG_LAT "<latitude>"
 #define XML_TAG_LATS "<latitude>%lf</latitude>"
@@ -73,6 +74,8 @@ extern "C" {
 #define XML_TAG_FIXS "fix=\"%d\""
 #define XML_TAG_NSAT "nsat=\""
 #define XML_TAG_NSATS "nsat=\"%d\""
+#define XML_TAG_HDOP "hdop=\""
+#define XML_TAG_HDOPS "hdop=\"%f\""
 #define XML_TAG_BLE "<ble>"
 #define XML_TAG_BLEF "</ble>"
 #define XML_TAG_UUID "<uuid>"
