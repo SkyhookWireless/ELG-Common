@@ -321,7 +321,8 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
 
     if (strstr(buff, error) != NULL && strstr(buff, errorf) != NULL) {
         if (strstr(buff, nondeterministic) != NULL)
-            cresp->payload_ext.payload.type = LOCATION_RQ_ERROR; // unable to determine client location
+            // unable to determine client location
+            cresp->payload_ext.payload.type = LOCATION_UNABLE_TO_DETERMINE;
         else
             cresp->payload_ext.payload.type = LOCATION_API_ERROR;
         return 0;

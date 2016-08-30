@@ -93,6 +93,9 @@ void print_location_resp(struct location_rsp_t *cr) {
     case LOCATION_RQ_ERROR:
         puts("LOCATION_RQ_ERROR");
         break;
+    case LOCATION_UNABLE_TO_DETERMINE:
+        puts("LOCATION_UNABLE_TO_DETERMINE");
+        break;
     }
 }
 

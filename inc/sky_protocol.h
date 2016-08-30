@@ -152,15 +152,19 @@ enum SKY_RQ_PAYLOAD_TYPE {
 enum SKY_RSP_PAYLOAD_TYPE {
     RSP_PAYLOAD_TYPE_NONE = 0,  // initialization value
 
-    /* success code */
-    LOCATION_RQ_SUCCESS,
-    LOCATION_RQ_ADDR_SUCCESS,
-    PROBE_REQUEST_SUCCESS,
+    // success codes
+    LOCATION_RQ_SUCCESS,        // lat+lon success
+    LOCATION_RQ_ADDR_SUCCESS,   // full address success
+    PROBE_REQUEST_SUCCESS,      // probe success
 
-    /* error code */
-    LOCATION_RQ_ERROR = 100,
-    LOCATION_GATEWAY_ERROR,
-    LOCATION_API_ERROR,
+    // error codes
+    LOCATION_RQ_ERROR = 10,      // client domain errors
+    LOCATION_GATEWAY_ERROR,      // elg server domain errors
+    LOCATION_API_ERROR,          // api server domain errors
+
+    // detailed client domain error codes
+    LOCATION_UNABLE_TO_DETERMINE = 20,// api-server is unable to determine the client
+                                      // location by the given client data.
 };
 
 // internal error codes
