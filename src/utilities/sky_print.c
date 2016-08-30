@@ -209,6 +209,7 @@ void print_location_req(struct location_rq_t *cr) {
     for (i = 0; i < cr->gps_count; i++) {
         printf("lat: %f\n", cr->gps[i].lat);
         printf("lon: %f\n", cr->gps[i].lon);
+        printf("hdop: %f\n", cr->gps[i].hdop);
         printf("alt: %f\n", cr->gps[i].alt);
         printf("hpe: %f\n", cr->gps[i].hpe);
         printf("speed: %f\n", cr->gps[i].speed);

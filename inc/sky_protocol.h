@@ -324,13 +324,14 @@ union cell_t {
 struct gps_t {
     double lat;
     double lon;
+    float hdop;
     float alt; // altitude
     float hpe;
     float speed;
     uint32_t age; // last seen in ms
     uint8_t nsat;
     uint8_t fix;
-    uint8_t unused[6]; // padding bytes
+    uint8_t unused[2]; // padding bytes
 };
 
 // blue tooth
