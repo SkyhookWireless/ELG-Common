@@ -89,25 +89,6 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     const char speed[] = "<speed>%f</speed>\n";
     const char age[] = "<age>%d</age>\n";
 
-    // calculate whether xml will fit into buff
-    int32_t sizes = 310 + 39 + 236 + 14 + 96
-            +\
- (17 + 18 + 18 + 42 + 12 + 4) * creq->ap_count
-            +\
- (8 + 9 + 18 + 21 + 21 + 19 + 12 + 5 + 5 + 32) * creq->ble_count
-            +\
- (15 + 16 + 18 + 18 + 18 + 16 + 20 + 5 + 5 + 5 + 7 + 5 + 3)
-                    * creq->cell_count
-            +\
- (36 + 18 + 28 + 30 + 18 + 28 + 24 + 18 + 18 + 12 + 12 + 8 + 8
-                    + 8 + 8 + 8 + 8) * creq->gps_count;
-
-    if (bufflen < sizes + 200) //add 200 for safety margin
-            {
-        perror("xml buffer too small");
-        return -1;
-    }
-
     int32_t i;
     size_t sz;
 
