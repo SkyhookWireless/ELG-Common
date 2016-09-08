@@ -143,33 +143,27 @@ int32_t get_http_timestamp(char *tbuf, uint32_t tbuf_len) {
     return strftime(tbuf, tbuf_len, "%a, %d %b %Y %H:%M:%S %Z", &tm);
 }
 
-int32_t sprint_buff(char *hex_buff, int32_t hex_buff_len, uint8_t *buff, int32_t len) {
-    int32_t i;
-    int32_t j = 0;
-    char *p = hex_buff;
-
-    int32_t total = len * 3 + len / 16;
+int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len) {
+    uint32_t i;
+    char *p = (char *)hex_buff;
+    uint32_t total = buff_len * 3;
 
     if (hex_buff_len < total)
         return -1;
 
-    for (i = 0; i < len; i++) {
-        p += sprintf(p, "%02X ", buff[i] & 0xFF);
-
-        if (++j > 15) {
-            j = 0;
-            p += sprintf(p, "\n");
-        }
+    for (i = 0; i < buff_len; ++i) {
+        p += sprintf(p, "%02X ", buff[i]);
     }
-    return (int32_t) (p - hex_buff);
+    *(p - 1) = '\0'; // overwrite the last space by \0.
+    return (int32_t) (p - (char *)hex_buff);
 }
 
-void print_buff(uint8_t *buff, int32_t len) {
-    int32_t i;
-    int32_t j = 0;
+void print_buff(uint8_t *buff, uint32_t len) {
+    uint32_t i;
+    uint32_t j = 0;
 
     for (i = 0; i < len; i++) {
-        printf("%02X ", buff[i] & 0xFF);
+        printf("%02X ", buff[i]);
 
         if (++j > 15) {
             j = 0;

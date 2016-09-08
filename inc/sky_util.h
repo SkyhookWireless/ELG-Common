@@ -32,8 +32,8 @@ uint64_t get_timestamp_ms();
 uint32_t get_timestamp_sec();
 int32_t get_http_timestamp(char *tbuf, uint32_t tbuf_len);
 
-void print_buff(uint8_t *buff, int32_t len);
-int32_t sprint_buff(char *hex_buff, int32_t hex_buff_len, uint8_t *buff, int32_t len);
+void print_buff(uint8_t *buff, uint32_t len);
+int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len);
 
 void print_s(char *buff, int32_t len);
 void print_ip(uint8_t *ip, uint8_t ip_type);
