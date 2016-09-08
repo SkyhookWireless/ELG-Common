@@ -161,6 +161,7 @@ enum SKY_RSP_PAYLOAD_TYPE {
     LOCATION_RQ_ERROR = 10,      // client domain errors
     LOCATION_GATEWAY_ERROR,      // elg server domain errors
     LOCATION_API_ERROR,          // api server domain errors
+    LOCATION_UNKNOWN,            // do not know which domain errors
 
     // detailed client domain error codes
     LOCATION_UNABLE_TO_DETERMINE = 20,// api-server is unable to determine the client
@@ -199,6 +200,7 @@ enum SKY_STATUS {
     DECODE_XML_FAILED,
     CREATE_META_FAILED,
     ARRAY_SIZE_TOO_SMALL,
+    ERROR_XML_MSG,
 
     /* HTTP response codes >= 100 */
     /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html */

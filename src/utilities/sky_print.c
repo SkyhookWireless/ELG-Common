@@ -96,6 +96,9 @@ void print_location_resp(struct location_rsp_t *cr) {
     case LOCATION_UNABLE_TO_DETERMINE:
         puts("LOCATION_UNABLE_TO_DETERMINE");
         break;
+    case LOCATION_UNKNOWN:
+        puts("LOCATION_UNKNOWN");
+        break;
     }
 }
 

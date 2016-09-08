@@ -297,8 +297,14 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
     const char error[] = "<error>";
     const char errorf[] = "</error>";
     const char nondeterministic[] = "<error>Unable to determine location</error>";
+    const char location_rs_end[] = "</LocationRS>";
 
     // TODO check http response header validity
+
+    if (strstr(buff, location_rs_end) == NULL) {
+        cresp->payload_ext.payload.type = LOCATION_UNKNOWN;
+        return -1;
+    }
 
     if (strstr(buff, error) != NULL && strstr(buff, errorf) != NULL) {
         if (strstr(buff, nondeterministic) != NULL)
@@ -306,7 +312,7 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
             cresp->payload_ext.payload.type = LOCATION_UNABLE_TO_DETERMINE;
         else
             cresp->payload_ext.payload.type = LOCATION_API_ERROR;
-        return 0;
+        return -1;
     }
 
     switch (creq->payload_ext.payload.type) {
