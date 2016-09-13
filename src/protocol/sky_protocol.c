@@ -761,6 +761,8 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case LOCATION_RQ_ERROR:
         case LOCATION_GATEWAY_ERROR:
         case LOCATION_API_ERROR:
+        case LOCATION_UNKNOWN:
+        case LOCATION_UNABLE_TO_DETERMINE:
             return 0; // success
         default:
             fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
