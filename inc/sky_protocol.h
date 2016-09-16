@@ -271,6 +271,13 @@ typedef uint16_t sky_checksum_t;
 struct ap_t {
     uint8_t MAC[6];
     int8_t rssi;
+    uint8_t flag; // bit fields:
+                  // bit 0: 1 if the device is currently connected to this AP. 0 otherwise.
+                  // bits 1-3: Band indicator. Allowable values:
+                  //                                             0: 2.4 GHz
+                  //                                             1: 5 GHz
+                  //                                             2-7: Reserved
+                  // bits 4-7: Reserved
 };
 
 // http://wiki.opencellid.org/wiki/API
