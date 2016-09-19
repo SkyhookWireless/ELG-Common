@@ -12,6 +12,7 @@ extern "C" {
 #ifndef SKY_PROTOCOL_H
 #define SKY_PROTOCOL_H
 
+#include <stdbool.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <endian.h>       // remove if not existing
@@ -251,6 +252,12 @@ typedef struct {
 } sky_payload_ext_t;
 
 typedef uint16_t sky_checksum_t;
+
+// enum values to set struct ap_t::flag.
+enum SKY_BAND {
+    BAND_2_4G = 0,
+    BAND_5G,
+};
 
 //
 // protocol payload data entry data types
@@ -593,6 +600,12 @@ struct location_rsp_t {
  n - 2 verify 0 fletcher 16
  n - 1 verify 1 fletcher 16
  *************************************************/
+
+// set the flag of an access point to claim the device is currently connected
+void sky_set_ap_connected(struct ap_t* ap, bool is_connected);
+
+// set the flag of an access point for the bandwidth
+void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band);
 
 // find aes key  based on userid in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);

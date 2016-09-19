@@ -9,10 +9,28 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <stdbool.h>
 #include "sky_crypt.h"
 #include "sky_protocol.h"
 #include "sky_util.h"
+
+// set the flag of an access point to claim the device is currently connected
+void sky_set_connected(struct ap_t* ap, bool is_connected) {
+    ap->flag |= 1; // set bit 0
+}
+
+// set the flag of an access point for the bandwidth
+void sky_set_band(struct ap_t* ap, enum SKY_BAND band) {
+    switch (band) {
+    case BAND_2_4G:
+        break;
+    case BAND_5G:
+        ap->flag |= 1 << 1; // set bit 1
+        break;
+    default:
+        perror("undefined SKY_BAND");
+        break;
+    }
+}
 
 // Return the number to add to become a multiple of 16.
 inline
