@@ -265,6 +265,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     sz = strlen(locrq_eof);
     strncpy(p, locrq_eof, sz);
     p += sz;
+    p = '\0';
 
     return (int32_t) (p - buff);
 }
