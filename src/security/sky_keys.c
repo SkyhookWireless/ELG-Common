@@ -89,6 +89,9 @@ int32_t parse_key(char *line, struct sky_key_t *key, int32_t field_count) {
                 int32_t end;
                 int32_t start = trim(record, slen, &end);
                 char *url = &record[start];
+                if (strlen(url) >= sizeof(key->relay.srv.url)) {
+                    return PARSE_ERR_URL;
+                }
                 strncpy(key->relay.srv.url, url, strlen(url));
                 key->relay.srv.url[strlen(url)] = '\0';
                 key->relay.valid = 1; // mark it valid
@@ -105,6 +108,9 @@ int32_t parse_key(char *line, struct sky_key_t *key, int32_t field_count) {
                 int32_t end;
                 int32_t start = trim(record, slen, &end);
                 char *cred = &record[start];
+                if (strlen(cred) >= sizeof(key->relay.srv.cred)) {
+                    return PARSE_ERR_CRED;
+                }
                 strncpy(key->relay.srv.cred, cred, strlen(cred));
                 key->relay.srv.cred[strlen(cred)] = '\0';
                 break;
