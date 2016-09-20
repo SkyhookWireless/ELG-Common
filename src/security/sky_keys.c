@@ -89,20 +89,24 @@ int32_t parse_key(char *line, struct sky_key_t *key, int32_t field_count) {
                 int32_t end;
                 int32_t start = trim(record, slen, &end);
                 char *url = &record[start];
-                memset(key->relay.srv.host, 0, sizeof(key->relay.srv.host));
-                strncpy(key->relay.srv.host, url, strlen(url));
+                strncpy(key->relay.srv.url, url, strlen(url));
+                key->relay.srv.url[strlen(url)] = '\0';
                 key->relay.valid = 1; // mark it valid
                 break;
             }
-            case 4: // port
+            case 4: // echo server credential
             {
-                errno = 0;
-                uint16_t port = (uint16_t) strtoul(record, &pEnd, 10); // convert record to 10 base int
-                if (errno) {
+                slen = (int32_t) strlen(record);
+                if (slen == 0) {
                     key->relay.valid = 0;
-                    return PARSE_ERR_PORT;
+                    return PARSE_ERR_CRED;
                 }
-                key->relay.srv.port = port;
+
+                int32_t end;
+                int32_t start = trim(record, slen, &end);
+                char *cred = &record[start];
+                strncpy(key->relay.srv.cred, cred, strlen(cred));
+                key->relay.srv.cred[strlen(cred)] = '\0';
                 break;
             }
         }
@@ -266,11 +270,11 @@ void print_key(struct sky_key_t *k) {
     printf("relay ip: ");
 
     if (k->relay.valid)
-        printf("%s\n",k->relay.srv.host);
+        printf("%s\n",k->relay.srv.url);
     else
         printf("\n");
 
-    printf("relay port: %d\n", k->relay.srv.port);
+    printf("relay port: %s\n", k->relay.srv.cred);
 }
 
 void walker(const void *node, const VISIT which, const int32_t depth) {

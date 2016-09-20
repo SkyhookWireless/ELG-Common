@@ -27,7 +27,7 @@ extern "C" {
 #define PARSE_ERR_APIKEY        -4
 #define PARSE_ERR_FIELDSHORT    -5
 #define PARSE_ERR_URL           -6
-#define PARSE_ERR_PORT          -7
+#define PARSE_ERR_CRED          -7
 #define PARSE_ERR_OUTOFMEM      -8
 #define PARSE_ERR_HOSTNOTFOUND  -9
 

@@ -21,6 +21,7 @@ extern "C" {
 #define SKY_PROTOCOL_VERSION    1
 
 #define URL_SIZE                512
+#define AUTH_SIZE               512
 
 #define MAC_SIZE                6
 #define IPV4_SIZE               4
@@ -428,8 +429,8 @@ struct location_ext_t {
 //
 
 struct sky_srv_t {
-    char host[URL_SIZE];
-    uint16_t port;
+    char url[URL_SIZE];
+    char cred[AUTH_SIZE];
 };
 
 // relay setting for echoing the location results
