@@ -254,10 +254,8 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     for (i = 0; i < creq->gps_count; i++) {
         //p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat, creq->gps[i].hdop);
         p += sprintf(p, gps_);
-        if (creq->gps[i].fix != UCHAR_MAX)
-            p += sprintf(p, " fix=\"%d\" ", creq->gps[i].fix);
-        if (creq->gps[i].nsat != UCHAR_MAX)
-            p += sprintf(p, " nsat=\"%d\" ", creq->gps[i].nsat);
+        p += sprintf(p, " fix=\"%d\" ", creq->gps[i].fix);
+        p += sprintf(p, " nsat=\"%d\" ", creq->gps[i].nsat);
         if (creq->gps[i].hdop != -1)
             p += sprintf(p, " hdop=\"%f\" ", creq->gps[i].hdop);
         p += sprintf(p, ">\n");
@@ -502,13 +500,13 @@ char api_req_decode_gps(int32_t count,
         if (p != NULL && p < pe && sscanf(p, XML_TAG_FIXS, &dval) == 1)
             req->gps[req->gps_count].fix = (uint8_t) (dval);
         else
-            req->gps[req->gps_count].fix = UCHAR_MAX; // invalid
+            req->gps[req->gps_count].fix = 1; // default
 
         p = strstr(ps, XML_TAG_NSAT);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_NSATS, &dval) == 1)
             req->gps[req->gps_count].nsat = (uint8_t) (dval);
         else
-            req->gps[req->gps_count].nsat = UCHAR_MAX; // invalid
+            req->gps[req->gps_count].nsat = 0; // default
 
         p = strstr(ps, XML_TAG_HDOP);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_HDOPS, &fval) == 1)
