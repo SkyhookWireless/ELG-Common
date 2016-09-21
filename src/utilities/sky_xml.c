@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <float.h>
 #include "sky_xml.h"
 #include "sky_util.h"
 
@@ -78,7 +80,8 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     const char cdma_lat[] = "<cdma-lat>%f</cdma-lat>\n";
     const char cdma_lon[] = "<cdma-lon>%f</cdma-lon>\n";
 
-    const char gps[] = "<gps-location fix=\"%d\" nsat=\"%d\" hdop=\"%f\">\n";
+    //const char gps[] = "<gps-location fix=\"%d\" nsat=\"%d\" hdop=\"%f\">\n";
+    const char gps_[] = "<gps-location ";
     const char gps_eof[] = "</gps-location>\n";
     const char lat[] = "<latitude>%f</latitude>\n";
     const char lon[] = "<longitude>%f</longitude>\n";
@@ -247,16 +250,29 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         }
     }
 
+    // set gps elements
     for (i = 0; i < creq->gps_count; i++) {
-        p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat, creq->gps[i].hdop);
-        p += sprintf(p, lat, creq->gps[i].lat);
-        p += sprintf(p, lon, creq->gps[i].lon);
-        p += sprintf(p, hpe, creq->gps[i].hpe);
-        p += sprintf(p, alt, creq->gps[i].alt);
-        //p += sprintf(p, height, creq->gps[i].height);
-        //p += sprintf(p, vpe, creq->gps[i].vpe);
-        p += sprintf(p, speed, creq->gps[i].speed);
-        p += sprintf(p, age, creq->gps[i].age);
+        //p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat, creq->gps[i].hdop);
+        p += sprintf(p, gps_);
+        if (creq->gps[i].fix != UCHAR_MAX)
+            p += sprintf(p, " fix=\"%d\" ", creq->gps[i].fix);
+        if (creq->gps[i].nsat != UCHAR_MAX)
+            p += sprintf(p, " nsat=\"%d\" ", creq->gps[i].nsat);
+        if (creq->gps[i].hdop != -1)
+            p += sprintf(p, " hdop=\"%f\" ", creq->gps[i].hdop);
+        p += sprintf(p, ">\n");
+        if (creq->gps[i].lat != DBL_MAX)
+            p += sprintf(p, lat, creq->gps[i].lat);
+        if (creq->gps[i].lon != DBL_MAX)
+            p += sprintf(p, lon, creq->gps[i].lon);
+        if (creq->gps[i].hpe != -1)
+            p += sprintf(p, hpe, creq->gps[i].hpe);
+        if (creq->gps[i].alt != FLT_MAX)
+            p += sprintf(p, alt, creq->gps[i].alt);
+        if (creq->gps[i].speed != -1)
+            p += sprintf(p, speed, creq->gps[i].speed);
+        if (creq->gps[i].age != UINT_MAX)
+            p += sprintf(p, age, creq->gps[i].age);
         sz = strlen(gps_eof);
         strncpy(p, gps_eof, sz);
         p += sz;
@@ -474,6 +490,10 @@ char api_req_decode_gps(int32_t count,
     while ((p = strstr(p, XML_TAG_GPS)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_GPSF);
+        if (pe == NULL) {
+            ++err_gps;
+            break;
+        }
         p = strstr(ps, XML_TAG_FIX);
         int32_t dval;
         float fval;
@@ -482,52 +502,56 @@ char api_req_decode_gps(int32_t count,
         if (p != NULL && p < pe && sscanf(p, XML_TAG_FIXS, &dval) == 1)
             req->gps[req->gps_count].fix = (uint8_t) (dval);
         else
-            err_gps++;
+            req->gps[req->gps_count].fix = UCHAR_MAX; // invalid
 
         p = strstr(ps, XML_TAG_NSAT);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_NSATS, &dval) == 1)
             req->gps[req->gps_count].nsat = (uint8_t) (dval);
         else
-            err_gps++;
+            req->gps[req->gps_count].nsat = UCHAR_MAX; // invalid
 
         p = strstr(ps, XML_TAG_HDOP);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_HDOPS, &fval) == 1)
             req->gps[req->gps_count].hdop = fval;
         else
-            err_gps++;
+            req->gps[req->gps_count].hdop = -1; // invalid
 
         p = strstr(ps, XML_TAG_LAT);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LATS, &dfval) == 1)
             req->gps[req->gps_count].lat = dfval;
         else
-            err_gps++;
+            req->gps[req->gps_count].lat = DBL_MAX; // invalid
 
         p = strstr(ps, XML_TAG_LON);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LONS, &dfval) == 1)
             req->gps[req->gps_count].lon = dfval;
         else
-            err_gps++;
+            req->gps[req->gps_count].lon = DBL_MAX; // invalid
 
         p = strstr(ps, XML_TAG_HPE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_HPES, &fval) == 1)
             req->gps[req->gps_count].hpe = fval;
         else
-            err_gps++;
+            req->gps[req->gps_count].hpe = -1; // invalid
 
         p = strstr(ps, XML_TAG_ALTITUDE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_ALTITUDES, &fval) == 1)
             req->gps[req->gps_count].alt = fval;
         else
-            err_gps++;
+            req->gps[req->gps_count].alt = FLT_MAX; // invalid
 
         p = strstr(ps, XML_TAG_SPEED);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_SPEEDS, &fval) == 1)
             req->gps[req->gps_count].speed = fval;
+        else
+            req->gps[req->gps_count].speed = -1; // invalid
 
         p = strstr(ps, XML_TAG_AGE);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
             req->gps[req->gps_count].age = uval;
+        else
+            req->gps[req->gps_count].age = UINT_MAX; // invalid
 
         p = pe;
         req->gps_count++;
