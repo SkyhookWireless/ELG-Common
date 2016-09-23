@@ -134,7 +134,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
     hexstr[12] = '\0'; // end the string
     p += sprintf(p, auth, creq->key.keyid, hexstr); // using software version as username
 
-    // set ap elements
+    // set ap attributes
     for (i = 0; i < creq->ap_count; i++) {
         sz = strlen(ap);
         strncpy(p, ap, sz);
@@ -154,7 +154,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         p += sz;
     }
 
-    // set ble elements
+    // set ble attributes
     for (i = 0; i < creq->ble_count; i++) {
         sz = strlen(ble);
         strncpy(p, ble, sz);
@@ -181,7 +181,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         p += sz;
     }
 
-    // set cell elements
+    // set cell attributes
     for (i = 0; i < creq->cell_count; i++) {
         switch (creq->cell_type) {
         case DATA_TYPE_GSM:
@@ -250,26 +250,27 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         }
     }
 
-    // set gps elements
+    // set gps attributes
+    // if the value of an attribute is invalid, it will be silently ignored.
     for (i = 0; i < creq->gps_count; i++) {
         //p += sprintf(p, gps, creq->gps[i].fix, creq->gps[i].nsat, creq->gps[i].hdop);
         p += sprintf(p, gps_);
         p += sprintf(p, " fix=\"%d\" ", creq->gps[i].fix);
         p += sprintf(p, " nsat=\"%d\" ", creq->gps[i].nsat);
-        if (creq->gps[i].hdop != -1)
+        if (creq->gps[i].hdop != -1) // invalid
             p += sprintf(p, " hdop=\"%f\" ", creq->gps[i].hdop);
         p += sprintf(p, ">\n");
-        if (creq->gps[i].lat != DBL_MAX)
+        if (creq->gps[i].lat != DBL_MAX) // invalid
             p += sprintf(p, lat, creq->gps[i].lat);
-        if (creq->gps[i].lon != DBL_MAX)
+        if (creq->gps[i].lon != DBL_MAX) // invalid
             p += sprintf(p, lon, creq->gps[i].lon);
-        if (creq->gps[i].hpe != -1)
+        if (creq->gps[i].hpe != -1) // invalid
             p += sprintf(p, hpe, creq->gps[i].hpe);
-        if (creq->gps[i].alt != FLT_MAX)
+        if (creq->gps[i].alt != FLT_MAX) // invalid
             p += sprintf(p, alt, creq->gps[i].alt);
-        if (creq->gps[i].speed != -1)
+        if (creq->gps[i].speed != -1) // invalid
             p += sprintf(p, speed, creq->gps[i].speed);
-        if (creq->gps[i].age != UINT_MAX)
+        if (creq->gps[i].age != UINT_MAX) // invalid
             p += sprintf(p, age, creq->gps[i].age);
         sz = strlen(gps_eof);
         strncpy(p, gps_eof, sz);
