@@ -608,6 +608,9 @@ void sky_set_ap_connected(struct ap_t* ap, bool is_connected);
 // set the flag of an access point for the bandwidth
 void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band);
 
+// initialize the attributes of GPS to default or invalid values
+void sky_init_gps_attrib(struct gps_t * gps);
+
 // find aes key  based on userid in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
 uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len);

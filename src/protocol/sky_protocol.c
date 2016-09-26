@@ -9,16 +9,20 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <float.h>
 #include "sky_crypt.h"
 #include "sky_protocol.h"
 #include "sky_util.h"
 
 // set the flag of an access point to claim the device is currently connected
+inline
 void sky_set_ap_connected(struct ap_t* ap, bool is_connected) {
     ap->flag |= 1; // set bit 0
 }
 
 // set the flag of an access point for the bandwidth
+inline
 void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band) {
     switch (band) {
     case BAND_2_4G:
@@ -30,6 +34,20 @@ void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band) {
         perror("undefined SKY_BAND");
         break;
     }
+}
+
+// initialize the attributes of GPS to default or invalid values
+inline
+void sky_init_gps_attrib(struct gps_t * gps) {
+    gps->nsat = 0; // default
+    gps->fix = 1;  // default
+    gps->age = UINT_MAX; // invalid
+    gps->alt = FLT_MAX;  // invalid
+    gps->hdop = -1;      // invalid
+    gps->hpe = -1;       // invalid
+    gps->lat = DBL_MAX;  // invalid
+    gps->lon = DBL_MAX;  // invalid
+    gps->speed = -1;     // invalid
 }
 
 // Return the number to add to become a multiple of 16.
