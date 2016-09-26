@@ -286,6 +286,10 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
 }
 
 // decodes xml into location_resp_t
+// Return code:
+// < 0 : non-meaningful error code
+// = 0 : success
+// > 0 : meaningful error code (i.e. API returns meaningful error response)
 int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
         const struct location_rq_t * creq, struct location_rsp_t *cresp) {
 
@@ -338,7 +342,7 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
 
     if (strstr(buff, location_rs_end) == NULL) {
         cresp->payload_ext.payload.type = LOCATION_UNKNOWN;
-        return -1;
+        return -1; // non-meaningful error
     }
 
     if (strstr(buff, error) != NULL && strstr(buff, errorf) != NULL) {
@@ -347,7 +351,7 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
             cresp->payload_ext.payload.type = LOCATION_UNABLE_TO_DETERMINE;
         else
             cresp->payload_ext.payload.type = LOCATION_API_ERROR;
-        return -1;
+        return 1; // meaningful error
     }
 
     switch (creq->payload_ext.payload.type) {
@@ -438,7 +442,7 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
         cresp->location_ext.country = p;
     }
 
-    return 0;
+    return 0; // success
 }
 
 char api_req_decode_ap(int32_t count, int32_t slen,
