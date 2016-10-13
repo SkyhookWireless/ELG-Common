@@ -25,10 +25,13 @@ void sky_set_ap_connected(struct ap_t* ap, bool is_connected) {
 inline
 void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band) {
     switch (band) {
+    case BAND_UNKNOWN:
+        break;
     case BAND_2_4G:
+        ap->flag |= 1 << 1; // set bit 1
         break;
     case BAND_5G:
-        ap->flag |= 1 << 1; // set bit 1
+        ap->flag |= 1 << 2; // set bit 2
         break;
     default:
         perror("undefined SKY_BAND");

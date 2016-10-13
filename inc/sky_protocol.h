@@ -256,7 +256,8 @@ typedef uint16_t sky_checksum_t;
 
 // enum values to set struct ap_t::flag.
 enum SKY_BAND {
-    BAND_2_4G = 0,
+    BAND_UNKNOWN = 0,
+    BAND_2_4G,
     BAND_5G,
 };
 
@@ -282,9 +283,10 @@ struct ap_t {
     uint8_t flag; // bit fields:
                   // bit 0: 1 if the device is currently connected to this AP. 0 otherwise.
                   // bits 1-3: Band indicator. Allowable values:
-                  //                                             0: 2.4 GHz
-                  //                                             1: 5 GHz
-                  //                                             2-7: Reserved
+                  //                                             0: unknown
+                  //                                             1: 2.4 GHz
+                  //                                             2: 5 GHz
+                  //                                             3-7: Reserved
                   // bits 4-7: Reserved
 };
 
