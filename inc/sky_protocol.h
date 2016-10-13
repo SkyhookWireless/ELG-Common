@@ -256,7 +256,8 @@ typedef uint16_t sky_checksum_t;
 
 // enum values to set struct ap_t::flag.
 enum SKY_BAND {
-    BAND_2_4G = 0,
+    BAND_UNKNOWN = 0,
+    BAND_2_4G,
     BAND_5G,
 };
 
