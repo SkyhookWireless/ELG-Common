@@ -100,7 +100,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
  (8 + 9 + 18 + 21 + 21 + 19 + 12 + 5 + 5 + 32) * creq->ble_count
             +\
  (15 + 16 + 18 + 18 + 18 + 16 + 20 + 5 + 5 + 5 + 7 + 5 + 3)
-                    * creq->cell_count
+                    * (creq->gsm_count + creq->cdma_count + creq->umts_count + creq->lte_count)
             +\
  (36 + 18 + 28 + 30 + 18 + 28 + 24 + 18 + 18 + 12 + 12 + 8 + 8
                     + 8 + 8 + 8 + 8) * creq->gps_count;
@@ -181,73 +181,65 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         p += sz;
     }
 
-    // set cell attributes
-    for (i = 0; i < creq->cell_count; i++) {
-        switch (creq->cell_type) {
-        case DATA_TYPE_GSM:
-            sz = strlen(gsm);
-            strncpy(p, gsm, sz);
-            p += sz;
-            p += sprintf(p, mcc, creq->cell[i].gsm.mcc);
-            p += sprintf(p, mnc, creq->cell[i].gsm.mnc);
-            p += sprintf(p, lac, creq->cell[i].gsm.lac);
-            p += sprintf(p, ci, creq->cell[i].gsm.ci);
-            p += sprintf(p, rssi, creq->cell[i].gsm.rssi);
-            p += sprintf(p, age, creq->cell[i].gsm.age);
-            sz = strlen(gsm_eof);
-            strncpy(p, gsm_eof, sz);
-            p += sz;
-            break;
-
-        case DATA_TYPE_CDMA:
-            sz = strlen(cdma);
-            strncpy(p, cdma, sz);
-            p += sz;
-            p += sprintf(p, cdma_lat, creq->cell[i].cdma.lat);
-            p += sprintf(p, cdma_lon, creq->cell[i].cdma.lon);
-            p += sprintf(p, sid, creq->cell[i].cdma.sid);
-            p += sprintf(p, bsid, creq->cell[i].cdma.bsid);
-            p += sprintf(p, nid, creq->cell[i].cdma.nid);
-            p += sprintf(p, rssi, creq->cell[i].cdma.rssi);
-            p += sprintf(p, age, creq->cell[i].cdma.age);
-            sz = strlen(cdma_eof);
-            strncpy(p, cdma_eof, sz);
-            p += sz;
-            break;
-
-        case DATA_TYPE_UMTS:
-            sz = strlen(umts);
-            strncpy(p, umts, sz);
-            p += sz;
-            p += sprintf(p, mcc, creq->cell[i].umts.mcc);
-            p += sprintf(p, mnc, creq->cell[i].umts.mnc);
-            p += sprintf(p, lac, creq->cell[i].umts.lac);
-            p += sprintf(p, ci, creq->cell[i].umts.ci);
-            p += sprintf(p, rssi, creq->cell[i].umts.rssi);
-            p += sprintf(p, age, creq->cell[i].umts.age);
-            sz = strlen(umts_eof);
-            strncpy(p, umts_eof, sz);
-            p += sz;
-            break;
-
-        case DATA_TYPE_LTE:
-            sz = strlen(lte);
-            strncpy(p, lte, sz);
-            p += sz;
-            p += sprintf(p, mcc, creq->cell[i].lte.mcc);
-            p += sprintf(p, mnc, creq->cell[i].lte.mnc);
-            p += sprintf(p, eucid, creq->cell[i].lte.eucid);
-            p += sprintf(p, rssi, creq->cell[i].lte.rssi);
-            p += sprintf(p, age, creq->cell[i].lte.age);
-            sz = strlen(lte_eof);
-            strncpy(p, lte_eof, sz);
-            p += sz;
-            break;
-
-        default:
-            perror("unknown cell type");
-            return -1;
-        }
+    // set gsm attributes
+    for (i = 0; i < creq->gsm_count; i++) {
+        sz = strlen(gsm);
+        strncpy(p, gsm, sz);
+        p += sz;
+        p += sprintf(p, mcc, creq->gsms[i].mcc);
+        p += sprintf(p, mnc, creq->gsms[i].mnc);
+        p += sprintf(p, lac, creq->gsms[i].lac);
+        p += sprintf(p, ci, creq->gsms[i].ci);
+        p += sprintf(p, rssi, creq->gsms[i].rssi);
+        p += sprintf(p, age, creq->gsms[i].age);
+        sz = strlen(gsm_eof);
+        strncpy(p, gsm_eof, sz);
+        p += sz;
+    }
+    // set cdma attributes
+    for (i = 0; i < creq->cdma_count; i++) {
+        sz = strlen(cdma);
+        strncpy(p, cdma, sz);
+        p += sz;
+        p += sprintf(p, cdma_lat, creq->cdmas[i].lat);
+        p += sprintf(p, cdma_lon, creq->cdmas[i].lon);
+        p += sprintf(p, sid, creq->cdmas[i].sid);
+        p += sprintf(p, bsid, creq->cdmas[i].bsid);
+        p += sprintf(p, nid, creq->cdmas[i].nid);
+        p += sprintf(p, rssi, creq->cdmas[i].rssi);
+        p += sprintf(p, age, creq->cdmas[i].age);
+        sz = strlen(cdma_eof);
+        strncpy(p, cdma_eof, sz);
+        p += sz;
+    }
+    // set umts attributes
+    for (i = 0; i < creq->umts_count; i++) {
+        sz = strlen(umts);
+        strncpy(p, umts, sz);
+        p += sz;
+        p += sprintf(p, mcc, creq->umtss[i].mcc);
+        p += sprintf(p, mnc, creq->umtss[i].mnc);
+        p += sprintf(p, lac, creq->umtss[i].lac);
+        p += sprintf(p, ci, creq->umtss[i].ci);
+        p += sprintf(p, rssi, creq->umtss[i].rssi);
+        p += sprintf(p, age, creq->umtss[i].age);
+        sz = strlen(umts_eof);
+        strncpy(p, umts_eof, sz);
+        p += sz;
+    }
+    // set lte attributes
+    for (i = 0; i < creq->lte_count; i++) {
+        sz = strlen(lte);
+        strncpy(p, lte, sz);
+        p += sz;
+        p += sprintf(p, mcc, creq->ltes[i].mcc);
+        p += sprintf(p, mnc, creq->ltes[i].mnc);
+        p += sprintf(p, eucid, creq->ltes[i].eucid);
+        p += sprintf(p, rssi, creq->ltes[i].rssi);
+        p += sprintf(p, age, creq->ltes[i].age);
+        sz = strlen(lte_eof);
+        strncpy(p, lte_eof, sz);
+        p += sz;
     }
 
     // set gps attributes
@@ -627,224 +619,217 @@ char api_req_decode_ble(int32_t count, int32_t slen,
     return err_ble;
 }
 
-char* api_req_decode_cdma(int32_t count, struct location_rq_t* req,
-        char* buff, char * p_err_cdma) {
-    req->cell_type = DATA_TYPE_CDMA;
-    req->cell = (union cell_t*) (calloc(count, sizeof(union cell_t)));
+char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
+    req->cdmas = (struct cdma_t*) (calloc(count, sizeof(struct cdma_t)));
     char* p = buff;
     char * ps, * pe;
+    char err_cdma = 0;
     while ((p = strstr(p, XML_TAG_CDMA)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_CDMAF);
         p = strstr(ps, XML_TAG_SID);
         int32_t dval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_SIDS, &dval) == 1)
-            req->cell[req->cell_count].cdma.sid = (uint16_t) (dval);
+            req->cdmas[req->cdma_count].sid = (uint16_t) (dval);
         else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_NID);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_NIDS, &dval) == 1)
-            req->cell[req->cell_count].cdma.nid = (uint16_t) (dval);
+            req->cdmas[req->cdma_count].nid = (uint16_t) (dval);
         else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_BSID);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_BSIDS, &dval) == 1)
-            req->cell[req->cell_count].cdma.bsid = (uint16_t) (dval);
+            req->cdmas[req->cdma_count].bsid = (uint16_t) (dval);
         else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_CDMA_LAT);
         double dfval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CDMA_LATS, &dfval) == 1)
-            req->cell[req->cell_count].cdma.lat = dfval;
+            req->cdmas[req->cdma_count].lat = dfval;
         else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_CDMA_LON);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CDMA_LONS, &dfval) == 1)
-            req->cell[req->cell_count].cdma.lon = dfval;
+            req->cdmas[req->cdma_count].lon = dfval;
         else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
             if (dval < -128)
                 dval = -128; // the min we can fit into int8_t
-
-            req->cell[req->cell_count].cdma.rssi = (int8_t) (dval);
+            req->cdmas[req->cdma_count].rssi = (int8_t) (dval);
         } else
-            (*p_err_cdma)++;
+            err_cdma++;
 
         p = strstr(ps, XML_TAG_AGE);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
-            req->cell[req->cell_count].cdma.age = uval;
+            req->cdmas[req->cdma_count].age = uval;
 
         p = pe;
-        req->cell_count++;
+        req->cdma_count++;
     }
-    if ((*p_err_cdma) > 0)
-        printf("CDMA %d ERRORS\n", (*p_err_cdma));
-    return p;
+    if (err_cdma > 0)
+        printf("CDMA %d ERRORS\n", err_cdma);
+    return err_cdma;
 }
 
-char* api_req_decode_gsm(int32_t count, struct location_rq_t* req,
-        char* buff, char * p_err_gsm) {
-    req->cell_type = DATA_TYPE_GSM;
-    req->cell = (union cell_t *) (calloc(count, sizeof(union cell_t)));
+char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
+    req->gsms = (struct gsm_t *) (calloc(count, sizeof(struct gsm_t)));
     char* p = buff;
     char * ps, * pe;
+    char err_gsm = 0;
     while ((p = strstr(p, XML_TAG_GSM)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_GSMF);
         p = strstr(ps, XML_TAG_MCC);
         int32_t dval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
-            req->cell[req->cell_count].gsm.mcc = (uint16_t) (dval);
+            req->gsms[req->gsm_count].mcc = (uint16_t) (dval);
         else
-            (*p_err_gsm)++;
+            err_gsm++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
-            req->cell[req->cell_count].gsm.mnc = (uint16_t) (dval);
+            req->gsms[req->gsm_count].mnc = (uint16_t) (dval);
         else
-            (*p_err_gsm)++;
+            err_gsm++;
 
         p = strstr(ps, XML_TAG_LAC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LACS, &dval) == 1)
-            req->cell[req->cell_count].gsm.lac = (uint16_t) (dval);
+            req->gsms[req->gsm_count].lac = (uint16_t) (dval);
         else
-            (*p_err_gsm)++;
+            err_gsm++;
 
         p = strstr(ps, XML_TAG_CI);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CIS, &uval) == 1)
-            req->cell[req->cell_count].gsm.ci = uval;
+            req->gsms[req->gsm_count].ci = uval;
         else
-            (*p_err_gsm)++;
+            err_gsm++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
             if (dval < -128)
                 dval = -128; // the min we can fit into int8_t
-
-            req->cell[req->cell_count].gsm.rssi = (int8_t) (dval);
+            req->gsms[req->gsm_count].rssi = (int8_t) (dval);
         } else
-            (*p_err_gsm)++;
+            err_gsm++;
 
         p = strstr(ps, XML_TAG_AGE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
-            req->cell[req->cell_count].gsm.age = uval;
+            req->gsms[req->gsm_count].age = uval;
 
         p = pe;
-        req->cell_count++;
+        req->gsm_count++;
     }
-    if ((*p_err_gsm) > 0)
-        printf("GSM %d ERRORS\n", (*p_err_gsm));
-    return p;
+    if (err_gsm > 0)
+        printf("GSM %d ERRORS\n", err_gsm);
+    return err_gsm;
 }
 
-char* api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff, char * p_err_lte) {
-    req->cell_type = DATA_TYPE_LTE;
-    req->cell = (union cell_t *) (calloc(count, sizeof(union cell_t)));
+char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
+    req->ltes = (struct lte_t *) (calloc(count, sizeof(struct lte_t)));
     char* p = buff;
     char * ps, * pe;
+    char err_lte = 0;
     while ((p = strstr(p, XML_TAG_LTE)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_LTEF);
         p = strstr(ps, XML_TAG_MCC);
         int32_t dval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
-            req->cell[req->cell_count].lte.mcc = (uint16_t) (dval);
+            req->ltes[req->lte_count].mcc = (uint16_t) (dval);
         else
-            (*p_err_lte)++;
+            err_lte++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
-            req->cell[req->cell_count].lte.mnc = (uint16_t) (dval);
+            req->ltes[req->lte_count].mnc = (uint16_t) (dval);
         else
-            (*p_err_lte)++;
+            err_lte++;
 
         p = strstr(ps, XML_TAG_EUCID);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_EUCIDS, &uval) == 1)
-            req->cell[req->cell_count].lte.eucid = uval;
+            req->ltes[req->lte_count].eucid = uval;
         else
-            (*p_err_lte)++;
+            err_lte++;
 
         p = strstr(ps, XML_TAG_AGE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
-            req->cell[req->cell_count].lte.age = uval;
+            req->ltes[req->lte_count].age = uval;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
             if (dval < -128)
                 dval = -128; // the min we can fit into int8_t
-
-            req->cell[req->cell_count].lte.rssi = (int8_t) (dval);
+            req->ltes[req->lte_count].rssi = (int8_t) (dval);
         } else
-            (*p_err_lte)++;
+            err_lte++;
 
         p = pe;
-        req->cell_count++;
+        req->lte_count++;
     }
-    if ((*p_err_lte) > 0)
-        printf("LTE %d ERRORS\n", (*p_err_lte));
-    return p;
+    if (err_lte > 0)
+        printf("LTE %d ERRORS\n", err_lte);
+    return err_lte;
 }
 
-char* api_req_decode_umts(int32_t count,
-        struct location_rq_t* req, char* buff, char * p_err_umts) {
-    req->cell_type = DATA_TYPE_UMTS;
-    req->cell = (union cell_t *) (calloc(count, sizeof(union cell_t)));
+char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
+    req->umtss = (struct umts_t *) (calloc(count, sizeof(struct umts_t)));
     char* p = buff;
     char * ps, * pe;
+    char err_umts = 0;
     while ((p = strstr(p, XML_TAG_UMTS)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_UMTSF);
         p = strstr(ps, XML_TAG_MCC);
         int32_t dval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
-            req->cell[req->cell_count].umts.mcc = (uint16_t) (dval);
+            req->umtss[req->umts_count].mcc = (uint16_t) (dval);
         else
-            (*p_err_umts)++;
+            err_umts++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
-            req->cell[req->cell_count].umts.mnc = (uint16_t) (dval);
+            req->umtss[req->umts_count].mnc = (uint16_t) (dval);
         else
-            (*p_err_umts)++;
+            err_umts++;
 
         p = strstr(ps, XML_TAG_LAC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LACS, &dval) == 1)
-            req->cell[req->cell_count].umts.lac = (uint16_t) (dval);
+            req->umtss[req->umts_count].lac = (uint16_t) (dval);
         else
-            (*p_err_umts)++;
+            err_umts++;
 
         p = strstr(ps, XML_TAG_CI);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CIS, &uval) == 1)
-            req->cell[req->cell_count].umts.ci = uval;
+            req->umtss[req->umts_count].ci = uval;
         else
-            (*p_err_umts)++;
+            err_umts++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
             if (dval < -128)
                 dval = -128; // the min we can fit into int8_t
-
-            req->cell[req->cell_count].umts.rssi = (int8_t) (dval);
+            req->umtss[req->umts_count].rssi = (int8_t) (dval);
         } else
-            (*p_err_umts)++;
+            err_umts++;
 
         p = pe;
-        req->cell_count++;
+        req->umts_count++;
     }
-    if ((*p_err_umts) > 0)
-        printf("UMTS %d ERRORS\n", (*p_err_umts));
-    return p;
+    if (err_umts > 0)
+        printf("UMTS %d ERRORS\n", err_umts);
+    return err_umts;
 }
 
 /* make sure after use free resources:
@@ -887,15 +872,25 @@ int32_t sky_decode_req_xml(char *buff, int32_t buff_len, int32_t data_len,
         err_ap = api_req_decode_ap(count, slen, req, buff);
     }
 
-    /* CELL */
+    /* GSM */
     if ((count = countTag(buff, XML_TAG_GSM)) > 0) {
-        p = api_req_decode_gsm(count, req, buff, &err_gsm);
-    } else if ((count = countTag(buff, XML_TAG_CDMA)) > 0) {
-        p = api_req_decode_cdma(count, req, buff, &err_cdma);
-    } else if ((count = countTag(buff, XML_TAG_UMTS)) > 0) {
-        p = api_req_decode_umts(count, req, buff, &err_umts);
-    } else if ((count = countTag(buff, XML_TAG_LTE)) > 0) {
-        p = api_req_decode_lte(count, req, buff, &err_lte);
+        err_gsm = api_req_decode_gsm(count, req, buff);
+
+    }
+
+    /* CDMA */
+    if ((count = countTag(buff, XML_TAG_CDMA)) > 0) {
+        err_cdma = api_req_decode_cdma(count, req, buff);
+    }
+
+    /* UMTS */
+    if ((count = countTag(buff, XML_TAG_UMTS)) > 0) {
+        err_umts = api_req_decode_umts(count, req, buff);
+    }
+
+    /* LTE */
+    if ((count = countTag(buff, XML_TAG_LTE)) > 0) {
+        err_lte = api_req_decode_lte(count, req, buff);
     }
 
     /* GPS */

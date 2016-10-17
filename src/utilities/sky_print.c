@@ -145,66 +145,48 @@ void print_location_req(struct location_rq_t *cr) {
         printf("\n");
     }
 
-    printf("CELL %d\n", cr->cell_count);
+    printf("GSM %d\n", cr->gsm_count);
 
-    switch (cr->cell_type) {
-    case DATA_TYPE_GSM:
-        puts("CELL TYPE: GSM");
-        break;
-    case DATA_TYPE_CDMA:
-        puts("CELL TYPE: CDMA");
-        break;
-    case DATA_TYPE_UMTS:
-        puts("CELL TYPE: UMTS");
-        break;
-    case DATA_TYPE_LTE:
-        puts("CELL TYPE: LTE");
-        break;
-    default:
-        puts("CELL TYPE: NONE");
+    for (i = 0; i < cr->gsm_count; i++) {
+        printf("age: %d\n", cr->gsms[i].age);
+        printf("ci: %d\n", cr->gsms[i].ci);
+        printf("mcc: %d\n", cr->gsms[i].mcc);
+        printf("mnc: %d\n", cr->gsms[i].mnc);
+        printf("lac: %d\n", cr->gsms[i].lac);
+        printf("rssi: %d\n", cr->gsms[i].rssi);
     }
 
-    for (i = 0; i < cr->cell_count; i++) {
-        switch (cr->cell_type) {
-        case DATA_TYPE_GSM:
-            printf("age: %d\n", cr->cell[i].gsm.age);
-            printf("ci: %d\n", cr->cell[i].gsm.ci);
-            printf("mcc: %d\n", cr->cell[i].gsm.mcc);
-            printf("mnc: %d\n", cr->cell[i].gsm.mnc);
-            printf("lac: %d\n", cr->cell[i].gsm.lac);
-            printf("rssi: %d\n", cr->cell[i].gsm.rssi);
-            break;
+    printf("CDMA %d\n", cr->cdma_count);
 
-        case DATA_TYPE_UMTS:
-            printf("age: %d\n", cr->cell[i].umts.age);
-            printf("ci: %d\n", cr->cell[i].umts.ci);
-            printf("mcc: %d\n", cr->cell[i].umts.mcc);
-            printf("mnc: %d\n", cr->cell[i].umts.mnc);
-            printf("lac: %d\n", cr->cell[i].umts.lac);
-            printf("rssi: %d\n", cr->cell[i].umts.rssi);
-            break;
+    for (i = 0; i < cr->cdma_count; i++) {
+        printf("age: %d\n", cr->cdmas[i].age);
+        printf("lat: %f\n", cr->cdmas[i].lat);
+        printf("lon: %f\n", cr->cdmas[i].lon);
+        printf("sid: %d\n", cr->cdmas[i].sid);
+        printf("nid: %d\n", cr->cdmas[i].nid);
+        printf("bsid: %d\n", cr->cdmas[i].bsid);
+        printf("rssi: %d\n", cr->cdmas[i].rssi);
+    }
 
-        case DATA_TYPE_CDMA:
-            printf("age: %d\n", cr->cell[i].cdma.age);
-            printf("lat: %f\n", cr->cell[i].cdma.lat);
-            printf("lon: %f\n", cr->cell[i].cdma.lon);
-            printf("sid: %d\n", cr->cell[i].cdma.sid);
-            printf("nid: %d\n", cr->cell[i].cdma.nid);
-            printf("bsid: %d\n", cr->cell[i].cdma.bsid);
-            printf("rssi: %d\n", cr->cell[i].cdma.rssi);
-            break;
+    printf("UMTS %d\n", cr->umts_count);
 
-        case DATA_TYPE_LTE:
-            printf("age: %d\n", cr->cell[i].lte.age);
-            printf("eucid: %d\n", cr->cell[i].lte.eucid);
-            printf("mcc: %d\n", cr->cell[i].lte.mcc);
-            printf("mnc: %d\n", cr->cell[i].lte.mnc);
-            printf("rssi: %d\n", cr->cell[i].lte.rssi);
-            break;
+    for (i = 0; i < cr->umts_count; i++) {
+        printf("age: %d\n", cr->umtss[i].age);
+        printf("ci: %d\n", cr->umtss[i].ci);
+        printf("mcc: %d\n", cr->umtss[i].mcc);
+        printf("mnc: %d\n", cr->umtss[i].mnc);
+        printf("lac: %d\n", cr->umtss[i].lac);
+        printf("rssi: %d\n", cr->umtss[i].rssi);
+    }
 
-        default:
-            printf("unknown cell type %d\n", cr->cell_type);
-        }
+    printf("LTE %d\n", cr->lte_count);
+
+    for (i = 0; i < cr->lte_count; i++) {
+        printf("age: %d\n", cr->ltes[i].age);
+        printf("eucid: %d\n", cr->ltes[i].eucid);
+        printf("mcc: %d\n", cr->ltes[i].mcc);
+        printf("mnc: %d\n", cr->ltes[i].mnc);
+        printf("rssi: %d\n", cr->ltes[i].rssi);
     }
 
     printf("GPS %d\n", cr->gps_count);

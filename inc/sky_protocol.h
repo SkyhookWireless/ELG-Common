@@ -32,7 +32,10 @@ extern "C" {
 
 #define MAX_APS                 100 // max # of access points
 #define MAX_GPSS                2   // max # of gps
-#define MAX_CELLS               7   // max # of cells
+#define MAX_GSMS                7   // max # of gsm
+#define MAX_UMTS                7   // max # of umts
+#define MAX_LTES                7   // max # of lte
+#define MAX_CDMAS               7   // max # of cdma
 #define MAX_BLES                5   // max # of blue tooth
 
 // max # of bytes for request buffer
@@ -42,7 +45,10 @@ extern "C" {
     + (sizeof(sky_entry_t) + MAX_IPS * IPV6_SIZE)                            \
     + (sizeof(sky_entry_t) + MAX_APS * sizeof(struct ap_t))                  \
     + (sizeof(sky_entry_t) + MAX_GPSS * sizeof(struct gps_t))                \
-    + (sizeof(sky_entry_t) + MAX_CELLS * sizeof(union cell_t))               \
+    + (sizeof(sky_entry_t) + MAX_GSMS * sizeof(struct gsm_t))                \
+    + (sizeof(sky_entry_t) + MAX_UMTS * sizeof(struct umts_t))               \
+    + (sizeof(sky_entry_t) + MAX_LTES * sizeof(struct lte_t))                \
+    + (sizeof(sky_entry_t) + MAX_CDMAS * sizeof(struct cdma_t))              \
     + (sizeof(sky_entry_t) + MAX_BLES * sizeof(struct ble_t))
 
 // max # of bytes for response buffer
@@ -332,13 +338,6 @@ struct lte_t {
     uint8_t unused[3]; // padding bytes
 };
 
-union cell_t {
-    struct gsm_t gsm;
-    struct cdma_t cdma;
-    struct umts_t umts;
-    struct lte_t lte;
-};
-
 // 64-bit aligned due to double
 struct gps_t {
     double lat;
@@ -473,10 +472,21 @@ struct location_rq_t {
     uint8_t ble_count;
     struct ble_t *bles;
 
-    // cell
-    uint8_t cell_count;
-    uint8_t cell_type;
-    union cell_t *cell; // gsm, cdma, lte and umts
+    // gsm
+    uint8_t gsm_count;
+    struct gsm_t *gsms;
+
+    // cdma
+    uint8_t cdma_count;
+    struct cdma_t *cdmas;
+
+    // lte
+    uint8_t lte_count;
+    struct lte_t *ltes;
+
+    // umts
+    uint8_t umts_count;
+    struct umts_t *umtss;
 
     // gps
     uint8_t gps_count;
