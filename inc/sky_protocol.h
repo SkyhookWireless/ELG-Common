@@ -18,8 +18,10 @@ extern "C" {
 #include <endian.h>       // remove if not existing
 #include <byteswap.h>     // remove if not existing
 
-#define SKY_PROTOCOL_VERSION    1
-#define SKY_PROTOCOL_VERSION_2  2
+// Note: Prototype protocol (deprecated) is historically named v1.0 protocol;
+//       Commercial protocols start from v2.0.
+#define SKY_PROTOCOL_VERSION    1   // v2.0 protocol
+#define SKY_PROTOCOL_VERSION_2  2   // v2.1 protocol
 
 #define URL_SIZE                512
 #define AUTH_SIZE               512
@@ -33,10 +35,7 @@ extern "C" {
 
 #define MAX_APS                 100 // max # of access points
 #define MAX_GPSS                2   // max # of gps
-#define MAX_GSMS                7   // max # of gsm
-#define MAX_UMTS                7   // max # of umts
-#define MAX_LTES                7   // max # of lte
-#define MAX_CDMAS               7   // max # of cdma
+#define MAX_CELLS               7   // max # of cells
 #define MAX_BLES                5   // max # of blue tooth
 
 // max # of bytes for request buffer
@@ -46,10 +45,7 @@ extern "C" {
     + (sizeof(sky_entry_t) + MAX_IPS * IPV6_SIZE)                            \
     + (sizeof(sky_entry_t) + MAX_APS * sizeof(struct ap_t))                  \
     + (sizeof(sky_entry_t) + MAX_GPSS * sizeof(struct gps_t))                \
-    + (sizeof(sky_entry_t) + MAX_GSMS * sizeof(struct gsm_t))                \
-    + (sizeof(sky_entry_t) + MAX_UMTS * sizeof(struct umts_t))               \
-    + (sizeof(sky_entry_t) + MAX_LTES * sizeof(struct lte_t))                \
-    + (sizeof(sky_entry_t) + MAX_CDMAS * sizeof(struct cdma_t))              \
+    + (sizeof(sky_entry_t) + MAX_CELLS * sizeof(union cell_t))               \
     + (sizeof(sky_entry_t) + MAX_BLES * sizeof(struct ble_t))
 
 // max # of bytes for response buffer
@@ -682,6 +678,11 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
 // received by the server from the client
 // decode binary data from client, result is in the location_req_t struct
+int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+        struct location_rq_t *creq);
+
+// received by the server from the client
+// decode binary data from client, result is in the location_req_t struct
 int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         struct location_rq_v2_t *creq);
 
@@ -690,6 +691,12 @@ int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_le
 // returns the packet len or -1 when fails
 int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp);
+
+// sent by the client to the server
+/* encodes the request struct into binary formatted packet */
+// returns the packet len or -1 when fails
+int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len,
+        struct location_rq_t *creq);
 
 // sent by the client to the server
 /* encodes the request struct into binary formatted packet */
