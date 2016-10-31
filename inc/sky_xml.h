@@ -86,14 +86,14 @@ extern "C" {
 #define XML_TAG_MINORS "<minor>%d</minor>"
 
 // encodes location_req_t into xml result is in buff
-int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq_v2_t *creq);
+int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq_t *creq);
 
 // decodes xml into location_resp_t
 int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
-        const struct location_rq_v2_t * creq, struct location_rsp_t *cresp);
+        const struct location_rq_t * creq, struct location_rsp_t *cresp);
 
 int32_t sky_decode_req_xml(char *buff, int32_t buff_len, int32_t data_len,
-        struct location_rq_v2_t *req);
+        struct location_rq_t *req);
 
 #endif
 

@@ -191,35 +191,6 @@ bool check_rq_max_counts(const struct location_rq_t * p_rq) {
     return true;
 }
 
-inline
-bool check_rq_max_counts_v2(const struct location_rq_v2_t * p_rq) {
-    if (p_rq->mac_count > MAX_MACS) {
-        perror("Too big: mac_count > MAX_MACS");
-        return false;
-    }
-    if (p_rq->ip_count > MAX_IPS) {
-        perror("Too big: ip_count > MAX_IPS");
-        return false;
-    }
-    if (p_rq->ap_count > MAX_APS) {
-        perror("Too big: ap_count > MAX_APS");
-        return false;
-    }
-    if (p_rq->gsm_count + p_rq->cdma_count + p_rq->umts_count + p_rq->lte_count > MAX_CELLS) {
-        perror("Too big: gsm_count + cdma_count + umts_count + lte_count > MAX_CELLS");
-        return false;
-    }
-    if (p_rq->gps_count > MAX_GPSS) {
-        perror("Too big: gps_count > MAX_GPSS");
-        return false;
-    }
-    if (p_rq->ble_count > MAX_BLES) {
-        perror("Too big: ble_count > MAX_BLES");
-        return false;;
-    }
-    return true;
-}
-
 // Return header by parameter "header & h".
 inline
 bool sky_get_header(const uint8_t * buff, uint32_t buff_len, uint8_t * p_header, uint32_t header_len) {
@@ -310,7 +281,7 @@ bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint8_t header_len, uin
 }
 
 inline
-uint8_t sky_get_ip_type(const struct location_rq_v2_t * p_loc_rq) {
+uint8_t sky_get_ip_type(const struct location_rq_t * p_loc_rq) {
     uint8_t zero_12[12];
     memset(zero_12, 0, sizeof(zero_12));
     if (memcmp(p_loc_rq->ip_addr + 4, zero_12, sizeof(zero_12)) == 0)
@@ -320,7 +291,7 @@ uint8_t sky_get_ip_type(const struct location_rq_v2_t * p_loc_rq) {
 }
 
 inline
-uint8_t sky_get_ipaddr_len(const struct location_rq_v2_t * p_loc_rq) {
+uint8_t sky_get_ipaddr_len(const struct location_rq_t * p_loc_rq) {
     return (sky_get_ip_type(p_loc_rq) == DATA_TYPE_IPV4) ? 4 : 16;
 }
 
@@ -338,7 +309,7 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
 // v2.0: received by the server from the client
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+int32_t sky_decode_req_bin_v1(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         struct location_rq_t *creq) {
 
     memset(&creq->header, 0, sizeof(creq->header));
@@ -455,7 +426,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
 int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_rq_v2_t *creq) {
+        struct location_rq_t *creq) {
 
     memset(&creq->header, 0, sizeof(creq->header));
     if (!sky_get_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
@@ -561,6 +532,22 @@ int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_le
         adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + payload_offset, p_entry_ex);
     }
     return 0;
+}
+
+// received by the server from the client
+/* decode binary data from client, result is in the location_req_t struct */
+/* binary encoded data in buff from client with data */
+int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+        struct location_rq_t *creq) {
+    if (creq->cell_count &&
+            (creq->gsm_count || creq->cdma_count || creq->umts_count || creq->lte_count)) {
+        perror("struct location_rq_t: use cell_t or gsm_t|cdma_t|umts_t|lte_t, but not both");
+        return -1;
+    }
+    if (creq->cell_count)
+        return sky_decode_req_bin_v1(buff, buff_len, data_len, creq);
+    else
+        return sky_decode_req_bin_v2(buff, buff_len, data_len, creq);
 }
 
 // sent by the server to the client
@@ -752,7 +739,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 // v2.0: sent by the client to the server
 /* encodes the request struct into binary formatted packet sent to server */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
+int32_t sky_encode_req_bin_v1(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
     if (!check_rq_max_counts(creq))
         return -1;
@@ -923,9 +910,9 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
 // v2.1: sent by the client to the server
 /* encodes the request struct into binary formatted packet sent to server */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_rq_v2_t *creq) {
+int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
-    if (!check_rq_max_counts_v2(creq))
+    if (!check_rq_max_counts(creq))
         return -1;
 
     if (creq->payload_ext.payload.type != LOCATION_RQ
@@ -1085,6 +1072,21 @@ int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_
         return -1;
 
     return sizeof(sky_rq_header_t) + creq->header.payload_length + sizeof(sky_checksum_t);
+}
+
+// sent by the client to the server
+/* encodes the request struct into binary formatted packet sent to server */
+// returns the packet len or -1 when fails
+int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
+    if (creq->cell_count &&
+            (creq->gsm_count || creq->cdma_count || creq->umts_count || creq->lte_count)) {
+        perror("struct location_rq_t: use cell_t or gsm_t|cdma_t|umts_t|lte_t, but not both");
+        return -1;
+    }
+    if (creq->cell_count)
+        return sky_encode_req_bin_v1(buff, buff_len, creq);
+    else
+        return sky_encode_req_bin_v2(buff, buff_len, creq);
 }
 
 // received by the client from the server

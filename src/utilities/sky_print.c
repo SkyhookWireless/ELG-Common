@@ -102,7 +102,7 @@ void print_location_resp(struct location_rsp_t *cr) {
     }
 }
 
-void print_location_req(struct location_rq_v2_t *cr) {
+void print_location_req(struct location_rq_t *cr) {
     int32_t i, j;
 
     printf("protocol: %d\n", cr->header.version);
