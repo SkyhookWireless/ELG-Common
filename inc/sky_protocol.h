@@ -19,6 +19,7 @@ extern "C" {
 #include <byteswap.h>     // remove if not existing
 
 #define SKY_PROTOCOL_VERSION    1
+#define SKY_PROTOCOL_VERSION_2  2
 
 #define URL_SIZE                512
 #define AUTH_SIZE               512
@@ -338,6 +339,13 @@ struct lte_t {
     uint8_t unused[3]; // padding bytes
 };
 
+union cell_t {
+    struct gsm_t gsm;
+    struct cdma_t cdma;
+    struct umts_t umts;
+    struct lte_t lte;
+};
+
 // 64-bit aligned due to double
 struct gps_t {
     double lat;
@@ -449,6 +457,51 @@ struct sky_key_t {
 };
 
 struct location_rq_t {
+
+    //
+    // protocol attributes
+    //
+
+    sky_rq_header_t header;
+    sky_payload_ext_t payload_ext;
+
+    uint8_t mac_count; // count of MAC address
+    uint8_t *mac;      // client device MAC identifier
+
+    uint8_t ip_count; // count of IP address
+    uint8_t ip_type;
+    uint8_t *ip_addr; // ipv4 or ipv6
+
+    // wifi access points
+    uint8_t ap_count;
+    struct ap_t *aps;
+
+    // blue tooth
+    uint8_t ble_count;
+    struct ble_t *bles;
+
+    // cell
+    uint8_t cell_count;
+    uint8_t cell_type;
+    union cell_t *cell; // gsm, cdma, lte and umts
+
+    // gps
+    uint8_t gps_count;
+    struct gps_t *gps;
+
+    //
+    // additional attributes
+    //
+
+    struct sky_key_t key; // user key
+    char *api_version; // api server version number (string 2.34)
+
+    // http server settings
+    char *http_url;
+    char *http_uri;
+};
+
+struct location_rq_v2_t {
 
     //
     // protocol attributes
@@ -629,8 +682,8 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
 // received by the server from the client
 // decode binary data from client, result is in the location_req_t struct
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_rq_t *creq);
+int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+        struct location_rq_v2_t *creq);
 
 // sent by the server to the client
 // encodes the loc struct into binary formatted packet sent to client
@@ -641,8 +694,8 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len,
 // sent by the client to the server
 /* encodes the request struct into binary formatted packet */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len,
-        struct location_rq_t *creq);
+int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len,
+        struct location_rq_v2_t *creq);
 
 // received by the client from the server
 /* decodes the binary data and the result is in the location_resp_t struct */

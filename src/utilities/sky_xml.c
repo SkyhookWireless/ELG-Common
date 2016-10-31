@@ -32,7 +32,7 @@ uint32_t countTag(const char * buff, const char * tag) {
 
 // encodes location_req_t into xml result is in buff
 // returns str len or -1 if it fails
-int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq_t *creq) {
+int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq_v2_t *creq) {
     const char xml[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     const char locrq[] =
             "<LocationRQ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
@@ -283,7 +283,7 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
 // = 0 : success
 // > 0 : meaningful error code (i.e. API returns meaningful error response)
 int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
-        const struct location_rq_t * creq, struct location_rsp_t *cresp) {
+        const struct location_rq_v2_t * creq, struct location_rsp_t *cresp) {
 
     buff[buff_len - 1] = 0; // make sure it ends with \0
 
@@ -438,7 +438,7 @@ int32_t sky_decode_resp_xml(char *buff, int32_t buff_len, int32_t data_len,
 }
 
 char api_req_decode_ap(int32_t count, int32_t slen,
-        struct location_rq_t* req, char* buff) {
+        struct location_rq_v2_t* req, char* buff) {
     req->aps = (struct ap_t*) (calloc(count, sizeof(struct ap_t)));
     char* p = buff;
     char err_ap = 0;
@@ -477,7 +477,7 @@ char api_req_decode_ap(int32_t count, int32_t slen,
 }
 
 char api_req_decode_gps(int32_t count,
-        struct location_rq_t * req, char * buff) {
+        struct location_rq_v2_t * req, char * buff) {
     req->gps = (struct gps_t*) (calloc(count, sizeof(struct gps_t)));
     char* p = buff;
     char err_gps = 0;
@@ -557,7 +557,7 @@ char api_req_decode_gps(int32_t count,
 }
 
 char api_req_decode_ble(int32_t count, int32_t slen,
-        struct location_rq_t* req, char* buff) {
+        struct location_rq_v2_t* req, char* buff) {
     req->bles = (struct ble_t*) (calloc(count, sizeof(struct ble_t)));
     char* p = buff;
     char err_ble = 0;
@@ -619,7 +619,7 @@ char api_req_decode_ble(int32_t count, int32_t slen,
     return err_ble;
 }
 
-char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
+char api_req_decode_cdma(int32_t count, struct location_rq_v2_t* req, char* buff) {
     req->cdmas = (struct cdma_t*) (calloc(count, sizeof(struct cdma_t)));
     char* p = buff;
     char * ps, * pe;
@@ -680,7 +680,7 @@ char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
     return err_cdma;
 }
 
-char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
+char api_req_decode_gsm(int32_t count, struct location_rq_v2_t* req, char* buff) {
     req->gsms = (struct gsm_t *) (calloc(count, sizeof(struct gsm_t)));
     char* p = buff;
     char * ps, * pe;
@@ -734,7 +734,7 @@ char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
     return err_gsm;
 }
 
-char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
+char api_req_decode_lte(int32_t count, struct location_rq_v2_t* req, char* buff) {
     req->ltes = (struct lte_t *) (calloc(count, sizeof(struct lte_t)));
     char* p = buff;
     char * ps, * pe;
@@ -782,7 +782,7 @@ char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
     return err_lte;
 }
 
-char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
+char api_req_decode_umts(int32_t count, struct location_rq_v2_t* req, char* buff) {
     req->umtss = (struct umts_t *) (calloc(count, sizeof(struct umts_t)));
     char* p = buff;
     char * ps, * pe;
@@ -845,7 +845,7 @@ char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
  sets payload_type, aps, ap_count, bles, ble_count, cells, cell_count, gps, gps_count
  */
 int32_t sky_decode_req_xml(char *buff, int32_t buff_len, int32_t data_len,
-        struct location_rq_t *req) {
+        struct location_rq_v2_t *req) {
     buff[buff_len - 1] = 0; // make sure it ends with 0
 
     memset(req, 0, sizeof(*req)); // zero out the counts

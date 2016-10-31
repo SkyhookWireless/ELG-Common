@@ -14,7 +14,7 @@ extern "C" {
 
 void print_location_resp(struct location_rsp_t *cr);
 
-void print_location_req(struct location_rq_t *cr);
+void print_location_req(struct location_rq_v2_t *cr);
 
 #endif
 

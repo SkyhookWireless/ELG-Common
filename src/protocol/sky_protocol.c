@@ -163,7 +163,7 @@ void sky_location_endian_swap(struct location_t * p) {
 }
 
 inline
-bool check_rq_max_counts(const struct location_rq_t * p_rq) {
+bool check_rq_max_counts(const struct location_rq_v2_t * p_rq) {
     if (p_rq->mac_count > MAX_MACS) {
         perror("Too big: mac_count > MAX_MACS");
         return false;
@@ -293,7 +293,7 @@ bool sky_set_checksum(uint8_t * buff, uint32_t buff_len, uint8_t header_len, uin
 }
 
 inline
-uint8_t sky_get_ip_type(const struct location_rq_t * p_loc_rq) {
+uint8_t sky_get_ip_type(const struct location_rq_v2_t * p_loc_rq) {
     uint8_t zero_12[12];
     memset(zero_12, 0, sizeof(zero_12));
     if (memcmp(p_loc_rq->ip_addr + 4, zero_12, sizeof(zero_12)) == 0)
@@ -303,7 +303,7 @@ uint8_t sky_get_ip_type(const struct location_rq_t * p_loc_rq) {
 }
 
 inline
-uint8_t sky_get_ipaddr_len(const struct location_rq_t * p_loc_rq) {
+uint8_t sky_get_ipaddr_len(const struct location_rq_v2_t * p_loc_rq) {
     return (sky_get_ip_type(p_loc_rq) == DATA_TYPE_IPV4) ? 4 : 16;
 }
 
@@ -321,8 +321,8 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
 // received by the server from the client
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_rq_t *creq) {
+int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+        struct location_rq_v2_t *creq) {
 
     memset(&creq->header, 0, sizeof(creq->header));
     if (!sky_get_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
@@ -619,7 +619,7 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
 // sent by the client to the server
 /* encodes the request struct into binary formatted packet sent to server */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
+int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_rq_v2_t *creq) {
 
     if (!check_rq_max_counts(creq))
         return -1;
