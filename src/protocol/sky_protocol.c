@@ -306,126 +306,10 @@ uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
     return 0;
 }
 
-// v2.0: received by the server from the client
+// received by the server from the client
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin_v1(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_rq_t *creq) {
-
-    memset(&creq->header, 0, sizeof(creq->header));
-    if (!sky_get_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
-        return -1;
-    if (!sky_verify_checksum(buff, buff_len, (uint8_t)sizeof(creq->header), creq->header.payload_length))
-        return -1;
-    memset(&creq->payload_ext, 0, sizeof(creq->payload_ext));
-    if (!sky_get_payload(buff, buff_len, sizeof(sky_rq_header_t), &creq->payload_ext, creq->header.payload_length))
-        return -1;
-
-    /* binary protocol description in sky_protocol.h */
-    creq->key.userid = creq->header.user_id;
-
-    if (creq->payload_ext.payload.type != LOCATION_RQ
-            && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "Unknown payload type %d\n", creq->payload_ext.payload.type);
-        return -1;
-    }
-
-    // read data entries from buffer
-    sky_entry_ext_t * p_entry_ex = &creq->payload_ext.data_entry;
-    uint32_t payload_offset = sizeof(sky_payload_t);
-    while (payload_offset < creq->header.payload_length) {
-        uint32_t sz = 0;
-        switch (p_entry_ex->entry->data_type) {
-        case DATA_TYPE_MAC:
-            creq->mac_count = p_entry_ex->entry->data_type_count;
-            sz = MAC_SIZE * p_entry_ex->entry->data_type_count;
-            creq->mac = p_entry_ex->data;
-            break;
-        case DATA_TYPE_IPV4:
-            creq->ip_count = p_entry_ex->entry->data_type_count;
-            creq->ip_type = DATA_TYPE_IPV4;
-            sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
-            creq->ip_addr = p_entry_ex->data;
-            break;
-        case DATA_TYPE_IPV6:
-            creq->ip_count = p_entry_ex->entry->data_type_count;
-            creq->ip_type = DATA_TYPE_IPV6;
-            sz = IPV6_SIZE * p_entry_ex->entry->data_type_count;
-            creq->ip_addr = p_entry_ex->data;
-            break;
-        case DATA_TYPE_AP:
-            creq->ap_count = p_entry_ex->entry->data_type_count;
-            sz = sizeof(struct ap_t) * p_entry_ex->entry->data_type_count;
-            creq->aps = (struct ap_t *)p_entry_ex->data;
-            break;
-        case DATA_TYPE_BLE:
-            creq->ble_count = p_entry_ex->entry->data_type_count;
-            sz = sizeof(struct ble_t) * p_entry_ex->entry->data_type_count;
-            creq->bles = (struct ble_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_ble_endian_swap(creq->bles);
-#endif
-            break;
-        case DATA_TYPE_GSM:
-            creq->cell_count = p_entry_ex->entry->data_type_count;
-            creq->cell_type = DATA_TYPE_GSM;
-            sz = sizeof(struct gsm_t) * p_entry_ex->entry->data_type_count;
-            creq->cell = (union cell_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_gsm_endian_swap(&creq->cell->gsm);
-#endif
-            break;
-        case DATA_TYPE_CDMA:
-            creq->cell_count = p_entry_ex->entry->data_type_count;
-            creq->cell_type = DATA_TYPE_CDMA;
-            sz = sizeof(struct cdma_t) * p_entry_ex->entry->data_type_count;
-            creq->cell = (union cell_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_cdma_endian_swap(&creq->cell->cdma);
-#endif
-            break;
-        case DATA_TYPE_UMTS:
-            creq->cell_count = p_entry_ex->entry->data_type_count;
-            creq->cell_type = DATA_TYPE_UMTS;
-            sz = sizeof(struct umts_t) * p_entry_ex->entry->data_type_count;
-            creq->cell = (union cell_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_umts_endian_swap(&creq->cell->umts);
-#endif
-            break;
-        case DATA_TYPE_LTE:
-            creq->cell_count = p_entry_ex->entry->data_type_count;
-            creq->cell_type = DATA_TYPE_LTE;
-            sz = sizeof(struct lte_t) * p_entry_ex->entry->data_type_count;
-            creq->cell = (union cell_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_lte_endian_swap(&creq->cell->lte);
-#endif
-            break;
-        case DATA_TYPE_GPS:
-            creq->gps_count = p_entry_ex->entry->data_type_count;
-            sz = sizeof(struct gps_t) * p_entry_ex->entry->data_type_count;
-            creq->gps = (struct gps_t *)p_entry_ex->data;
-#ifdef __BIG_ENDIAN__
-            sky_gps_endian_swap(creq->gps);
-#endif
-            break;
-        case DATA_TYPE_PAD:
-            return 0; // success
-        default:
-            perror("unknown data type");
-            return -1;
-        }
-        payload_offset += sizeof(sky_entry_t) + sz;
-        adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + payload_offset, p_entry_ex);
-    }
-    return 0;
-}
-
-// v2.1: received by the server from the client
-/* decode binary data from client, result is in the location_req_t struct */
-/* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         struct location_rq_t *creq) {
 
     memset(&creq->header, 0, sizeof(creq->header));
@@ -532,22 +416,6 @@ int32_t sky_decode_req_bin_v2(uint8_t *buff, uint32_t buff_len, uint32_t data_le
         adjust_data_entry(buff, buff_len, sizeof(sky_rq_header_t) + payload_offset, p_entry_ex);
     }
     return 0;
-}
-
-// received by the server from the client
-/* decode binary data from client, result is in the location_req_t struct */
-/* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
-        struct location_rq_t *creq) {
-    if (creq->cell_count &&
-            (creq->gsm_count || creq->cdma_count || creq->umts_count || creq->lte_count)) {
-        perror("struct location_rq_t: use cell_t or gsm_t|cdma_t|umts_t|lte_t, but not both");
-        return -1;
-    }
-    if (creq->cell_count)
-        return sky_decode_req_bin_v1(buff, buff_len, data_len, creq);
-    else
-        return sky_decode_req_bin_v2(buff, buff_len, data_len, creq);
 }
 
 // sent by the server to the client
@@ -736,11 +604,16 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len, struct location_rs
     return sizeof(sky_rsp_header_t) + cresp->header.payload_length + sizeof(sky_checksum_t);
 }
 
-// v2.0: sent by the client to the server
+// sent by the client to the server
 /* encodes the request struct into binary formatted packet sent to server */
 // returns the packet len or -1 when fails
-int32_t sky_encode_req_bin_v1(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
+int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
 
+    if (creq->cell_count &&
+            (creq->gsm_count || creq->cdma_count || creq->umts_count || creq->lte_count)) {
+        perror("struct location_rq_t: use cell_t or gsm_t|cdma_t|umts_t|lte_t, but not both");
+        return -1;
+    }
     if (!check_rq_max_counts(creq))
         return -1;
 
@@ -782,6 +655,18 @@ int32_t sky_encode_req_bin_v1(uint8_t *buff, uint32_t buff_len, struct location_
             return -1;
         }
         payload_length += creq->cell_count * sz + sizeof(sky_entry_t);
+    }
+    if (creq->gsm_count > 0) {
+        payload_length += sizeof(sky_entry_t) + creq->gsm_count * sizeof(struct gsm_t);
+    }
+    if (creq->cdma_count > 0) {
+        payload_length += sizeof(sky_entry_t) + creq->cdma_count * sizeof(struct cdma_t);
+    }
+    if (creq->umts_count > 0) {
+        payload_length += sizeof(sky_entry_t) + creq->umts_count * sizeof(struct umts_t);
+    }
+    if (creq->lte_count > 0) {
+        payload_length += sizeof(sky_entry_t) + creq->lte_count * sizeof(struct lte_t);
     }
 
     // payload length must be a multiple of 16 bytes
@@ -883,129 +768,6 @@ int32_t sky_encode_req_bin_v1(uint8_t *buff, uint32_t buff_len, struct location_
         }
         adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
     }
-    // GPS
-    if (creq->gps_count > 0) {
-        p_entry_ex->entry->data_type = DATA_TYPE_GPS;
-        p_entry_ex->entry->data_type_count = creq->gps_count;
-        sz = sizeof(struct gps_t) * creq->gps_count;
-#ifdef __BIG_ENDIAN__
-        sky_gps_endian_swap(creq->gps);
-#endif
-        memcpy(p_entry_ex->data, creq->gps, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    }
-
-    // fill in padding bytes
-    if (pad_len > 0) {
-        uint8_t * pad_bytes = p_entry_ex->data - sizeof(sky_entry_t);
-        memset(pad_bytes, DATA_TYPE_PAD, pad_len);
-    }
-
-    if (!sky_set_checksum(buff, buff_len, (uint8_t)sizeof(creq->header), creq->header.payload_length))
-        return -1;
-
-    return sizeof(sky_rq_header_t) + creq->header.payload_length + sizeof(sky_checksum_t);
-}
-
-// v2.1: sent by the client to the server
-/* encodes the request struct into binary formatted packet sent to server */
-// returns the packet len or -1 when fails
-int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
-
-    if (!check_rq_max_counts(creq))
-        return -1;
-
-    if (creq->payload_ext.payload.type != LOCATION_RQ
-            && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_ext.payload.type);
-        return -1;
-    }
-
-    uint32_t payload_length = sizeof(sky_payload_t);
-    if (creq->mac_count > 0)
-        payload_length += sizeof(sky_entry_t) + creq->mac_count * MAC_SIZE;
-    if (creq->ip_count > 0)
-        payload_length += sizeof(sky_entry_t) +
-            creq->ip_count * (creq->ip_type == DATA_TYPE_IPV4 ? IPV4_SIZE : IPV6_SIZE);
-    if (creq->ap_count > 0)
-        payload_length += sizeof(sky_entry_t) + creq->ap_count * sizeof(struct ap_t);
-    if (creq->ble_count > 0)
-        payload_length += sizeof(sky_entry_t) + creq->ble_count * sizeof(struct ble_t);
-    if (creq->gps_count > 0)
-        payload_length += sizeof(sky_entry_t) + creq->gps_count * sizeof(struct gps_t);
-    if (creq->gsm_count > 0) {
-        payload_length += sizeof(sky_entry_t) + creq->gsm_count * sizeof(struct gsm_t);
-    }
-    if (creq->cdma_count > 0) {
-        payload_length += sizeof(sky_entry_t) + creq->cdma_count * sizeof(struct cdma_t);
-    }
-    if (creq->umts_count > 0) {
-        payload_length += sizeof(sky_entry_t) + creq->umts_count * sizeof(struct umts_t);
-    }
-    if (creq->lte_count > 0) {
-        payload_length += sizeof(sky_entry_t) + creq->lte_count * sizeof(struct lte_t);
-    }
-
-    // payload length must be a multiple of 16 bytes
-    uint8_t pad_len = pad_16(payload_length);
-    payload_length += pad_len;
-
-    creq->header.payload_length = payload_length;
-    creq->header.user_id = creq->key.userid;
-    // 16 byte initialization vector
-    sky_gen_iv(creq->header.iv);
-    if (!sky_set_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
-        return -1;
-
-    if (!sky_set_payload(buff, buff_len, sizeof(sky_rq_header_t), &creq->payload_ext, creq->header.payload_length))
-        return -1;
-
-    // fill in data entries in buffer
-    sky_entry_ext_t * p_entry_ex = &creq->payload_ext.data_entry;
-    uint32_t sz = 0;
-    // MAC
-    {
-        p_entry_ex->entry->data_type = DATA_TYPE_MAC;
-        p_entry_ex->entry->data_type_count = creq->mac_count;
-        sz = MAC_SIZE * p_entry_ex->entry->data_type_count;
-        memcpy(p_entry_ex->data, creq->mac, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    }
-    // IP
-    if (creq->ip_type == DATA_TYPE_IPV4) {
-        // IPv4
-        p_entry_ex->entry->data_type = DATA_TYPE_IPV4;
-        p_entry_ex->entry->data_type_count = creq->ip_count;
-        sz = IPV4_SIZE * p_entry_ex->entry->data_type_count;
-        memcpy(p_entry_ex->data, creq->ip_addr, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    } else {
-        // IPv6
-        p_entry_ex->entry->data_type = DATA_TYPE_IPV6;
-        p_entry_ex->entry->data_type_count = creq->ip_count;
-        sz = IPV6_SIZE * p_entry_ex->entry->data_type_count;
-        memcpy(p_entry_ex->data, creq->ip_addr, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    }
-    // Access Point
-    if (creq->ap_count > 0) {
-        p_entry_ex->entry->data_type = DATA_TYPE_AP;
-        p_entry_ex->entry->data_type_count = creq->ap_count;
-        sz = sizeof(struct ap_t) * creq->ap_count;
-        memcpy(p_entry_ex->data, creq->aps, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    }
-    // Blue Tooth
-    if (creq->ble_count > 0) {
-        p_entry_ex->entry->data_type = DATA_TYPE_BLE;
-        p_entry_ex->entry->data_type_count = creq->ble_count;
-        sz = sizeof(struct ble_t) * creq->ble_count;
-#ifdef __BIG_ENDIAN__
-        sky_ble_endian_swap(creq->bles);
-#endif
-        memcpy(p_entry_ex->data, creq->bles, sz);
-        adjust_data_entry(buff, buff_len, (p_entry_ex->data - buff) + sz, p_entry_ex);
-    }
     // GSM
     if (creq->gsm_count > 0) {
         p_entry_ex->entry->data_type = DATA_TYPE_GSM;
@@ -1072,21 +834,6 @@ int32_t sky_encode_req_bin_v2(uint8_t *buff, uint32_t buff_len, struct location_
         return -1;
 
     return sizeof(sky_rq_header_t) + creq->header.payload_length + sizeof(sky_checksum_t);
-}
-
-// sent by the client to the server
-/* encodes the request struct into binary formatted packet sent to server */
-// returns the packet len or -1 when fails
-int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_t *creq) {
-    if (creq->cell_count &&
-            (creq->gsm_count || creq->cdma_count || creq->umts_count || creq->lte_count)) {
-        perror("struct location_rq_t: use cell_t or gsm_t|cdma_t|umts_t|lte_t, but not both");
-        return -1;
-    }
-    if (creq->cell_count)
-        return sky_encode_req_bin_v1(buff, buff_len, creq);
-    else
-        return sky_encode_req_bin_v2(buff, buff_len, creq);
 }
 
 // received by the client from the server

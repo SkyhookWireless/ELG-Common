@@ -479,9 +479,9 @@ struct location_rq_t {
 
     // 1. cell
     // note: *DEPRECATED*, please use gsm_t, cdma_t, lte_t, and umts_t as follows.
-    uint8_t cell_count;
-    uint8_t cell_type;
-    union cell_t *cell; // gsm, cdma, lte and umts
+    uint8_t cell_count; // deprecated, use gsm, cdma, lte and umts instead
+    uint8_t cell_type;  // deprecated, use gsm, cdma, lte and umts instead
+    union cell_t *cell; // deprecated, use gsm, cdma, lte and umts instead
 
     // 2. suggested cell types to use: gsm_t, cdma_t, lte_t and umts_t
     // 2.1 gsm
