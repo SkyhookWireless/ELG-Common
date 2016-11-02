@@ -473,36 +473,27 @@ struct location_rq_t {
     uint8_t ble_count;
     struct ble_t *bles;
 
-    //
-    // Cell types: use either cell_t or gsm_t, cdma_t, lte_t and umts_t.
-    //
-
-    // 1. cell
-    // note: *DEPRECATED*, please use gsm_t, cdma_t, lte_t, and umts_t as follows.
+    // cell
+    // note: *DEPRECATED*, please use gsm, cdma, lte, and umts which are defined below.
     uint8_t cell_count; // deprecated, use gsm, cdma, lte and umts instead
     uint8_t cell_type;  // deprecated, use gsm, cdma, lte and umts instead
     union cell_t *cell; // deprecated, use gsm, cdma, lte and umts instead
 
-    // 2. suggested cell types to use: gsm_t, cdma_t, lte_t and umts_t
-    // 2.1 gsm
+    // gsm
     uint8_t gsm_count;
     struct gsm_t *gsms;
 
-    // 2.2 cdma
+    // cdma
     uint8_t cdma_count;
     struct cdma_t *cdmas;
 
-    // 2.3 lte
+    // lte
     uint8_t lte_count;
     struct lte_t *ltes;
 
-    // 2.4 umts
+    // umts
     uint8_t umts_count;
     struct umts_t *umtss;
-
-    //
-    // End of cell types
-    //
 
     // gps
     uint8_t gps_count;

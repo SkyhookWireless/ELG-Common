@@ -441,7 +441,7 @@ char api_req_decode_ap(int32_t count, int32_t slen,
         struct location_rq_t* req, char* buff) {
     req->aps = (struct ap_t*) (calloc(count, sizeof(struct ap_t)));
     char* p = buff;
-    char err_ap = 0;
+    char num_errors = 0;
     char * ps, * pe;
     while ((p = strstr(p, XML_TAG_AP)) != NULL) {
         pe = strstr(p, XML_TAG_APF);
@@ -453,10 +453,10 @@ char api_req_decode_ap(int32_t count, int32_t slen,
                     sizeof(req->aps[req->ap_count].MAC));
             if (res < sizeof(req->aps[req->ap_count].MAC)) {
                 printf("mac %d is too short\n", req->ap_count);
-                err_ap++;
+                num_errors++;
             }
         } else
-            err_ap++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_SIG);
         int32_t dval;
@@ -466,27 +466,27 @@ char api_req_decode_ap(int32_t count, int32_t slen,
 
             req->aps[req->ap_count].rssi = (int8_t) (dval);
         } else
-            err_ap++;
+            num_errors++;
 
         p = pe;
         req->ap_count++;
     }
-    if (err_ap > 0)
-        printf("ACCESS POINTS %d ERRORS\n", err_ap);
-    return err_ap;
+    if (num_errors > 0)
+        printf("ACCESS POINTS %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_gps(int32_t count,
         struct location_rq_t * req, char * buff) {
     req->gps = (struct gps_t*) (calloc(count, sizeof(struct gps_t)));
     char* p = buff;
-    char err_gps = 0;
+    char num_errors = 0;
     char * ps, * pe;
     while ((p = strstr(p, XML_TAG_GPS)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_GPSF);
         if (pe == NULL) {
-            ++err_gps;
+            ++num_errors;
             break;
         }
         p = strstr(ps, XML_TAG_FIX);
@@ -551,16 +551,16 @@ char api_req_decode_gps(int32_t count,
         p = pe;
         req->gps_count++;
     }
-    if (err_gps > 0)
-        printf("GPS %d ERRORS\n", err_gps);
-    return err_gps;
+    if (num_errors > 0)
+        printf("GPS %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_ble(int32_t count, int32_t slen,
         struct location_rq_t* req, char* buff) {
     req->bles = (struct ble_t*) (calloc(count, sizeof(struct ble_t)));
     char* p = buff;
-    char err_ble = 0;
+    char num_errors = 0;
     char * ps, * pe;
     while ((p = strstr(p, XML_TAG_BLE)) != NULL) {
         uint32_t res = 0;
@@ -572,10 +572,10 @@ char api_req_decode_ble(int32_t count, int32_t slen,
                     sizeof(req->bles[req->ble_count].MAC));
             if (res < sizeof(req->bles[req->ble_count].MAC)) {
                 printf("ble mac %d is too short\n", req->ble_count);
-                err_ble++;
+                num_errors++;
             }
         } else
-            err_ble++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_UUID);
         slen = get_xval(p, XML_TAG_UUID, XML_TAG_UUIDF, &p);
@@ -584,23 +584,23 @@ char api_req_decode_ble(int32_t count, int32_t slen,
                     sizeof(req->bles[req->ble_count].uuid));
             if (res < sizeof(req->bles[req->ble_count].uuid)) {
                 printf("ble uuid %d is too short\n", req->ble_count);
-                err_ble++;
+                num_errors++;
             }
         } else
-            err_ble++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_MAJOR);
         int32_t dval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MAJORS, &dval) == 1)
             req->bles[req->ble_count].major = (uint16_t) (dval);
         else
-            err_ble++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_MINOR);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MINORS, &dval) == 1)
             req->bles[req->ble_count].minor = (uint16_t) (dval);
         else
-            err_ble++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
@@ -609,21 +609,21 @@ char api_req_decode_ble(int32_t count, int32_t slen,
 
             req->bles[req->ble_count].rssi = (int8_t) (dval);
         } else
-            err_ble++;
+            num_errors++;
 
         p = pe;
         req->ble_count++;
     }
-    if (err_ble > 0)
-        printf("BLE %d ERRORS\n", err_ble);
-    return err_ble;
+    if (num_errors > 0)
+        printf("BLE %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
     req->cdmas = (struct cdma_t*) (calloc(count, sizeof(struct cdma_t)));
     char* p = buff;
     char * ps, * pe;
-    char err_cdma = 0;
+    char num_errors = 0;
     while ((p = strstr(p, XML_TAG_CDMA)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_CDMAF);
@@ -632,32 +632,32 @@ char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
         if (p != NULL && p < pe && sscanf(p, XML_TAG_SIDS, &dval) == 1)
             req->cdmas[req->cdma_count].sid = (uint16_t) (dval);
         else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_NID);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_NIDS, &dval) == 1)
             req->cdmas[req->cdma_count].nid = (uint16_t) (dval);
         else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_BSID);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_BSIDS, &dval) == 1)
             req->cdmas[req->cdma_count].bsid = (uint16_t) (dval);
         else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_CDMA_LAT);
         double dfval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CDMA_LATS, &dfval) == 1)
             req->cdmas[req->cdma_count].lat = dfval;
         else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_CDMA_LON);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CDMA_LONS, &dfval) == 1)
             req->cdmas[req->cdma_count].lon = dfval;
         else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
@@ -665,7 +665,7 @@ char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
                 dval = -128; // the min we can fit into int8_t
             req->cdmas[req->cdma_count].rssi = (int8_t) (dval);
         } else
-            err_cdma++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_AGE);
         uint32_t uval;
@@ -675,16 +675,16 @@ char api_req_decode_cdma(int32_t count, struct location_rq_t* req, char* buff) {
         p = pe;
         req->cdma_count++;
     }
-    if (err_cdma > 0)
-        printf("CDMA %d ERRORS\n", err_cdma);
-    return err_cdma;
+    if (num_errors > 0)
+        printf("CDMA %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
     req->gsms = (struct gsm_t *) (calloc(count, sizeof(struct gsm_t)));
     char* p = buff;
     char * ps, * pe;
-    char err_gsm = 0;
+    char num_errors = 0;
     while ((p = strstr(p, XML_TAG_GSM)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_GSMF);
@@ -693,26 +693,26 @@ char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
             req->gsms[req->gsm_count].mcc = (uint16_t) (dval);
         else
-            err_gsm++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
             req->gsms[req->gsm_count].mnc = (uint16_t) (dval);
         else
-            err_gsm++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_LAC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LACS, &dval) == 1)
             req->gsms[req->gsm_count].lac = (uint16_t) (dval);
         else
-            err_gsm++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_CI);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CIS, &uval) == 1)
             req->gsms[req->gsm_count].ci = uval;
         else
-            err_gsm++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
@@ -720,7 +720,7 @@ char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
                 dval = -128; // the min we can fit into int8_t
             req->gsms[req->gsm_count].rssi = (int8_t) (dval);
         } else
-            err_gsm++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_AGE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
@@ -729,16 +729,16 @@ char api_req_decode_gsm(int32_t count, struct location_rq_t* req, char* buff) {
         p = pe;
         req->gsm_count++;
     }
-    if (err_gsm > 0)
-        printf("GSM %d ERRORS\n", err_gsm);
-    return err_gsm;
+    if (num_errors > 0)
+        printf("GSM %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
     req->ltes = (struct lte_t *) (calloc(count, sizeof(struct lte_t)));
     char* p = buff;
     char * ps, * pe;
-    char err_lte = 0;
+    char num_errors = 0;
     while ((p = strstr(p, XML_TAG_LTE)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_LTEF);
@@ -747,20 +747,20 @@ char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
             req->ltes[req->lte_count].mcc = (uint16_t) (dval);
         else
-            err_lte++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
             req->ltes[req->lte_count].mnc = (uint16_t) (dval);
         else
-            err_lte++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_EUCID);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_EUCIDS, &uval) == 1)
             req->ltes[req->lte_count].eucid = uval;
         else
-            err_lte++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_AGE);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_AGES, &uval) == 1)
@@ -772,21 +772,21 @@ char api_req_decode_lte(int32_t count, struct location_rq_t* req, char* buff) {
                 dval = -128; // the min we can fit into int8_t
             req->ltes[req->lte_count].rssi = (int8_t) (dval);
         } else
-            err_lte++;
+            num_errors++;
 
         p = pe;
         req->lte_count++;
     }
-    if (err_lte > 0)
-        printf("LTE %d ERRORS\n", err_lte);
-    return err_lte;
+    if (num_errors > 0)
+        printf("LTE %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
     req->umtss = (struct umts_t *) (calloc(count, sizeof(struct umts_t)));
     char* p = buff;
     char * ps, * pe;
-    char err_umts = 0;
+    char num_errors = 0;
     while ((p = strstr(p, XML_TAG_UMTS)) != NULL) {
         ps = p;
         pe = strstr(ps, XML_TAG_UMTSF);
@@ -795,26 +795,26 @@ char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MCCS, &dval) == 1)
             req->umtss[req->umts_count].mcc = (uint16_t) (dval);
         else
-            err_umts++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_MNC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_MNCS, &dval) == 1)
             req->umtss[req->umts_count].mnc = (uint16_t) (dval);
         else
-            err_umts++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_LAC);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_LACS, &dval) == 1)
             req->umtss[req->umts_count].lac = (uint16_t) (dval);
         else
-            err_umts++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_CI);
         uint32_t uval;
         if (p != NULL && p < pe && sscanf(p, XML_TAG_CIS, &uval) == 1)
             req->umtss[req->umts_count].ci = uval;
         else
-            err_umts++;
+            num_errors++;
 
         p = strstr(ps, XML_TAG_RSSI);
         if (p != NULL && p < pe && sscanf(p, XML_TAG_RSSIS, &dval) == 1) {
@@ -822,14 +822,14 @@ char api_req_decode_umts(int32_t count, struct location_rq_t* req, char* buff) {
                 dval = -128; // the min we can fit into int8_t
             req->umtss[req->umts_count].rssi = (int8_t) (dval);
         } else
-            err_umts++;
+            num_errors++;
 
         p = pe;
         req->umts_count++;
     }
-    if (err_umts > 0)
-        printf("UMTS %d ERRORS\n", err_umts);
-    return err_umts;
+    if (num_errors > 0)
+        printf("UMTS %d ERRORS\n", num_errors);
+    return num_errors;
 }
 
 /* make sure after use free resources:
@@ -859,49 +859,49 @@ int32_t sky_decode_req_xml(char *buff, int32_t buff_len, int32_t data_len,
     }
 
     int32_t count = 0;
-    char err_ap = 0;
-    char err_gsm = 0;
-    char err_umts = 0;
-    char err_cdma = 0;
-    char err_lte = 0;
-    char err_ble = 0;
-    char err_gps = 0;
+    char num_ap_errors = 0;
+    char num_gsm_errors = 0;
+    char num_umts_errors = 0;
+    char num_cdma_errors = 0;
+    char num_lte_errors = 0;
+    char num_ble_errors = 0;
+    char num_gps_errors = 0;
 
     /* AP */
     if ((count = countTag(buff, XML_TAG_AP)) > 0) {
-        err_ap = api_req_decode_ap(count, slen, req, buff);
+        num_ap_errors = api_req_decode_ap(count, slen, req, buff);
     }
 
     /* GSM */
     if ((count = countTag(buff, XML_TAG_GSM)) > 0) {
-        err_gsm = api_req_decode_gsm(count, req, buff);
+        num_gsm_errors = api_req_decode_gsm(count, req, buff);
 
     }
 
     /* CDMA */
     if ((count = countTag(buff, XML_TAG_CDMA)) > 0) {
-        err_cdma = api_req_decode_cdma(count, req, buff);
+        num_cdma_errors = api_req_decode_cdma(count, req, buff);
     }
 
     /* UMTS */
     if ((count = countTag(buff, XML_TAG_UMTS)) > 0) {
-        err_umts = api_req_decode_umts(count, req, buff);
+        num_umts_errors = api_req_decode_umts(count, req, buff);
     }
 
     /* LTE */
     if ((count = countTag(buff, XML_TAG_LTE)) > 0) {
-        err_lte = api_req_decode_lte(count, req, buff);
+        num_lte_errors = api_req_decode_lte(count, req, buff);
     }
 
     /* GPS */
     if ((count = countTag(buff, XML_TAG_GPS)) > 0) {
-        err_gps = api_req_decode_gps(count, req, buff);
+        num_gps_errors = api_req_decode_gps(count, req, buff);
     }
 
     /* BLE */
     if ((count = countTag(buff, XML_TAG_BLE)) > 0) {
-        err_ble = api_req_decode_ble(count, slen, req, buff);
+        num_ble_errors = api_req_decode_ble(count, slen, req, buff);
     }
 
-    return 0 - err_ap - err_ble - err_gps - err_lte - err_umts - err_cdma - err_gsm;
+    return 0 - num_ap_errors - num_ble_errors - num_gps_errors - num_lte_errors - num_umts_errors - num_cdma_errors - num_gsm_errors;
 }
