@@ -13,7 +13,6 @@
 #include <float.h>
 #include "sky_crypt.h"
 #include "sky_protocol.h"
-#include "sky_util.h"
 
 // set the flag of an access point to claim the device is currently connected
 inline
