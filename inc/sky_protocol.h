@@ -443,7 +443,7 @@ struct sky_relay_t {
 
 // stores keys in a binary tree
 struct sky_key_t {
-    uint32_t userid;
+    uint32_t partner_id;
     uint8_t aes_key[16];  // 128 bit aes key
     char keyid[128];      // api key
     struct sky_relay_t relay; // relay responses
@@ -630,9 +630,9 @@ void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band);
 // initialize the attributes of GPS to default or invalid values
 void sky_init_gps_attrib(struct gps_t * gps);
 
-// find aes key  based on userid in key root and set it
+// find aes key  based on partner_id in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
-uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len);
+uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
 // received by the server from the client
 // decode binary data from client, result is in the location_req_t struct

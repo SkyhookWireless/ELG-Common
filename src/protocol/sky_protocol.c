@@ -294,9 +294,9 @@ uint8_t sky_get_ipaddr_len(const struct location_rq_t * p_loc_rq) {
     return (sky_get_ip_type(p_loc_rq) == DATA_TYPE_IPV4) ? 4 : 16;
 }
 
-// find aes key  based on userid in key root and set it
+// find aes key  based on partner_id in key root and set it
 //int sky_set_key(void *key_root, struct location_head_t *head);
-uint32_t sky_get_userid_from_rq_header(uint8_t *buff, uint32_t buff_len) {
+uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len) {
     sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
     if (sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header))) {
@@ -321,7 +321,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         return -1;
 
     /* binary protocol description in sky_protocol.h */
-    creq->key.userid = creq->header.user_id;
+    creq->key.partner_id = creq->header.user_id;
 
     if (creq->payload_ext.payload.type != LOCATION_RQ
             && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
@@ -673,7 +673,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     payload_length += pad_len;
 
     creq->header.payload_length = payload_length;
-    creq->header.user_id = creq->key.userid;
+    creq->header.user_id = creq->key.partner_id;
     // 16 byte initialization vector
     sky_gen_iv(creq->header.iv);
     if (!sky_set_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))

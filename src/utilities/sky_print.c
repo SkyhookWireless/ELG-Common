@@ -109,7 +109,7 @@ void print_location_req(struct location_rq_t *cr) {
     printf("payload type: %d\n", cr->payload_ext.payload.type);
     printf("firmware version: %d\n", cr->payload_ext.payload.sw_version);
 
-    printf("userid: %d\n", cr->key.userid);
+    printf("partner_id: %d\n", cr->key.partner_id);
 
     printf("Device MAC: ");
     if (cr->mac_count > 0) {
