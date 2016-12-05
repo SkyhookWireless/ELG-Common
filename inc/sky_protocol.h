@@ -219,7 +219,7 @@ typedef struct {
     uint8_t version;           // protocol version
     uint8_t unused;            // padding byte
     uint16_t payload_length;   // payload length
-    uint32_t user_id;          // user id
+    uint32_t partner_id;          // user id
     uint8_t iv[16];            // initialization vector
 } sky_rq_header_t;
 
