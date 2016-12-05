@@ -79,7 +79,7 @@ void sky_header_endian_swap(uint8_t * p_header, uint32_t header_len) {
     case (sizeof(sky_rq_header_t)): {
         sky_rq_header_t * p = (sky_rq_header_t *)p_header;
         SKY_ENDIAN_SWAP(p->payload_length);
-        SKY_ENDIAN_SWAP(p->user_id);
+        SKY_ENDIAN_SWAP(p->realm_id);
         (void)p; // suppress warning [-Werror=unused-variable]
         break;
     }
@@ -300,7 +300,7 @@ uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len) {
     sky_rq_header_t header;
     memset(&header, 0, sizeof(header));
     if (sky_get_header(buff, buff_len, (uint8_t *)&header, sizeof(header))) {
-        return header.user_id;
+        return header.realm_id;
     }
     return 0;
 }
@@ -321,7 +321,7 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         return -1;
 
     /* binary protocol description in sky_protocol.h */
-    creq->key.partner_id = creq->header.user_id;
+    creq->key.partner_id = creq->header.realm_id;
 
     if (creq->payload_ext.payload.type != LOCATION_RQ
             && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
@@ -673,7 +673,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
     payload_length += pad_len;
 
     creq->header.payload_length = payload_length;
-    creq->header.user_id = creq->key.partner_id;
+    creq->header.realm_id = creq->key.partner_id;
     // 16 byte initialization vector
     sky_gen_iv(creq->header.iv);
     if (!sky_set_header(buff, buff_len, (uint8_t *)&creq->header, sizeof(creq->header)))
