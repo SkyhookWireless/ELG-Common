@@ -1,7 +1,7 @@
 /************************************************
- * Authors: Istvan Sleder and Marwan Kallal
+ * Authors: Liang Zhao and Ted Boinske
  * 
- * Company: Skyhook Wireless
+ * Company: Skyhook
  *
  ************************************************/
 
@@ -18,9 +18,19 @@ extern "C" {
 #include <endian.h>       // remove if not existing
 #include <byteswap.h>     // remove if not existing
 
+/*************************************************************************
+ *
+ * Skyhook Macros and Types for ELGv2 Protocol
+ *
+ *************************************************************************/
+
 #define SKY_PROTOCOL_VERSION    1
 
-#define URL_SIZE                512
+#define URL_FORMAT              "elg://host:port/"
+
+#define HOST_SIZE               512
+#define PORT_SIZE               6 // max port# is 65535
+#define URL_SIZE                sizeof(URL_FORMAT) + HOST_SIZE + PORT_SIZE
 #define AUTH_SIZE               512
 
 #define MAC_SIZE                6
@@ -431,7 +441,7 @@ struct location_ext_t {
 //
 
 struct sky_srv_t {
-    char url[URL_SIZE];
+    char url[URL_SIZE]; // URL format - https://en.wikipedia.org/wiki/Uniform_Resource_Locator#Syntax
     char cred[AUTH_SIZE];
 };
 
@@ -531,95 +541,32 @@ struct location_rsp_t {
     struct location_ext_t location_ext; // ext location result: full address, etc.
 };
 
-/***********************************************
- BINARY REQUEST PROTOCOL FORMAT
- ************************************************
- 0  - protocol version 0
- 1  - client id 0
- 2  - client id 1
- 3  - client id 2
- 4  - client id 3
- 5  - entire payload length 0 - LSB count includes byte 0
- 6  - entire payload length 1 - MSB
- 7  - iv 0
- 8  - iv 1
- 9  - iv 2
- 10 - iv 3
- 11 - iv 4
- 12 - iv 5
- 13 - iv 6
- 14 - iv 7
- 15 - iv 8
- 16 - iv 9
- 17 - iv 10
- 18 - iv 11
- 19 - iv 12
- 20 - iv 13
- 21 - iv 14
- 22 - iv 15
- --- encrypted after this ---
- 23 - client software version
- 24 - client MAC 0
- 25 - client MAC 1
- 26 - client MAC 2
- 27 - client MAC 3
- 28 - clinet MAC 4
- 29 - clinet MAC 5
- 30 - payload type -- e.g. location request
- -------------------
- payload data can be out of order (type,count/size,data)
- 31 - data type -- refers to DATA_TYPE enum and struct
- 32 - data type count -- this a the number of structs (0 - 255)
- 33 - data... memcopied data struct (ap, cell, ble, gps)
- ...
- n - 2 verify 0 fletcher 16
- n - 1 verify 1 fletcher 16
- *************************************************/
+// callback function for sending data from buffer
+// @param buff - data buffer
+// @param buff_len - data length in buffer
+// @param host - host name
+// @param port - port number
+// @param rpc_handler - the remote procedure call handler (e.g. socket) for client-server model communication;
+//                    - value is set within sky_tx_fn, and is used by sky_rx_fn.
+// @return the number of sent bytes, which should be equivalent to buff_len, upon success,
+//         or -1 upon failure.
+typedef int32_t (* sky_tx_fn)(uint8_t *buff, uint32_t buff_len,
+        char * host, uint16_t port, void * rpc_handler);
 
-/***********************************************
- BINARY RESPONSE PROTOCOL FORMAT
- ************************************************
- 0  - protocol version
- 1  - entire payload length 0 - LSB count includes byte 0
- 2  - entire payload length 1 - MSB
- 3  - iv 0
- 4  - iv 1
- 5  - iv 2
- 6  - iv 3
- 7  - iv 4
- 8  - iv 5
- 9  - iv 6
- 10 - iv 7
- 11 - iv 8
- 12 - iv 9
- 13 - iv 10
- 14 - iv 11
- 15 - iv 12
- 16 - iv 13
- 17 - iv 14
- 18 - iv 15
- --- encrypted after this ---
- 19 - server software version
- 20 - timestamp 0
- 21 - timestamp 1
- 22 - timestamp 2
- 23 - timestamp 3
- 24 - timestamp 4
- 25 - timestamp 5
- 26 - payload type -- e.g. location request
- 27 - lat 8 bytes
- 35 - lon 8 bytes
- 43 - hpe 4 bytes
- (47) optional 6 - byte device MAC
- -------------------
- payload data can be out of order (type,count/size,data)
- 47 - data type -- refers to DATA_TYPE enum and struct
- 48 - data type count -- this a the number of structs (0 - 255)
- 49 - data... memcopied data struct (ap, cell, ble, gps)
- ...
- n - 2 verify 0 fletcher 16
- n - 1 verify 1 fletcher 16
- *************************************************/
+// callback function for receiving data to buffer
+// @param buff - data buffer
+// @param buff_len - buffer length
+// @param rpc_handler - the remote procedure call handler (e.g. socket) for client-server model communication
+// @return the number of received bytes upon success, or -1 upon failure.
+typedef int32_t (* sky_rx_fn)(uint8_t *buff, uint32_t buff_len,
+        void * rpc_handler);
+
+
+/*************************************************************************
+ *
+ * Skyhook Preliminary APIs for ELGv2 Protocol
+ *
+ *************************************************************************/
 
 // set the flag of an access point to claim the device is currently connected
 void sky_set_ap_connected(struct ap_t* ap, bool is_connected);
@@ -631,12 +578,11 @@ void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band);
 void sky_init_gps_attrib(struct gps_t * gps);
 
 // find aes key  based on partner_id in key root and set it
-//int sky_set_key(void *key_root, struct location_head_t *head);
 uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
 // received by the server from the client
-// decode binary data from client, result is in the location_req_t struct
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+// decode binary data from client, result is in the location_rq_t struct
+int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rq_t *creq);
 
 // sent by the server to the client
@@ -646,15 +592,64 @@ int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp);
 
 // sent by the client to the server
-/* encodes the request struct into binary formatted packet */
+// encodes the request struct into binary formatted packet
 // returns the packet len or -1 when fails
 int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rq_t *creq);
 
 // received by the client from the server
-/* decodes the binary data and the result is in the location_resp_t struct */
-int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+// decodes the binary data and the result is in the location_rsp_t struct
+int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp);
+
+/*************************************************************************
+ *
+ * Skyhook Easy APIs for ELGv2 Protocol client
+ *
+ *************************************************************************/
+
+// parse url out for host and port
+// @param url - in format of "elg://host:port/"
+// @param host - host name in url
+// @param port - port number in url
+// @return true for success or false for failure
+bool sky_parse_url(char * url, char * host, uint16_t * port);
+
+// print binary buffer in HEX to console
+// @param buff - binary buffer
+// @param len - buffer length
+void print_buff(uint8_t *buff, uint32_t len);
+
+// print binary buffer in HEX to array
+// @param buff - binary buffer
+// @param len - buffer length
+// @param hex_buff - HEX buffer
+// @param hex_buff_len - HEX buffer length
+// @return the data length in HEX buffer for success, or -1 for failure
+int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len);
+
+// client encodes, encrypts and sends client's location request to Skyhook location service
+// @param buff - data buffer to send out
+// @param buff_len - the length of data buffer
+// @param rq - client's location request
+// @param tx - callback function for sending out data buffer
+// @param url - destination server and port in the format of "elg://host:port/"
+// @param rpc_handler - the RPC call handler to mask the underlying communication details
+// @return the number of sent bytes (in ELG request) upon success, or -1 upon failure.
+int32_t sky_send_location_request(uint8_t *buff, uint32_t buff_len,
+        struct location_rq_t * rq,
+        sky_tx_fn tx, char * url, void * rpc_handler);
+
+// client receives, decrypts and decodes Skyhook location service's response
+// @param buff - data buffer to store the received data
+// @param buff_len - the length of data buffer
+// @param rsp - server's location response
+// @param rx - callback function for receiving data
+// @param rpc_handler - the RPC call handler to mask the underlying communication details
+// @return the number of received bytes (in ELG response) upon success, or -1 upon failure.
+int32_t sky_receive_location_response(uint8_t *buff, uint32_t buff_len,
+        struct location_rsp_t *rsp,
+        sky_rx_fn rx, void * rpc_handler);
 
 #endif
 
