@@ -546,20 +546,20 @@ struct location_rsp_t {
 // @param buff_len - data length in buffer
 // @param host - host name
 // @param port - port number
-// @param rpc_handler - the remote procedure call handler (e.g. socket) for client-server model communication;
+// @param rpc_handle - the remote procedure call handle (e.g. socket) for client-server model communication;
 //                    - value is set within sky_tx_fn, and is used by sky_rx_fn.
 // @return the number of sent bytes, which should be equivalent to buff_len, upon success,
 //         or -1 upon failure.
-typedef int32_t (* sky_tx_fn)(uint8_t *buff, uint32_t buff_len,
-        char * host, uint16_t port, void * rpc_handler);
+typedef int32_t (* sky_client_send_fn)(uint8_t *buff, uint32_t buff_len,
+        char * host, uint16_t port, void * rpc_handle);
 
 // callback function for receiving data to buffer
 // @param buff - data buffer
 // @param buff_len - buffer length
-// @param rpc_handler - the remote procedure call handler (e.g. socket) for client-server model communication
+// @param rpc_handle - the remote procedure call handle (e.g. socket) for client-server model communication
 // @return the number of received bytes upon success, or -1 upon failure.
-typedef int32_t (* sky_rx_fn)(uint8_t *buff, uint32_t buff_len,
-        void * rpc_handler);
+typedef int32_t (* sky_client_recv_fn)(uint8_t *buff, uint32_t buff_len,
+        void * rpc_handle);
 
 
 /*************************************************************************
@@ -580,24 +580,24 @@ void sky_init_gps_attrib(struct gps_t * gps);
 // find aes key  based on partner_id in key root and set it
 uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len);
 
-// received by the server from the client
+// called by server
 // decode binary data from client, result is in the location_rq_t struct
 int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rq_t *creq);
 
-// sent by the server to the client
+// called by server
 // encodes the loc struct into binary formatted packet sent to client
 // returns the packet len or -1 when fails
 int32_t sky_encode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp);
 
-// sent by the client to the server
+// called by client
 // encodes the request struct into binary formatted packet
 // returns the packet len or -1 when fails
 int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rq_t *creq);
 
-// received by the client from the server
+// called by client
 // decodes the binary data and the result is in the location_rsp_t struct
 int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp);
@@ -609,47 +609,56 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
  *************************************************************************/
 
 // parse url out for host and port
-// @param url - in format of "elg://host:port/"
-// @param host - host name in url
-// @param port - port number in url
+// @param url [in] - in format of "elg://host:port/", array length is URL_SIZE
+// @param host [in] - host name in url, array length is HOST_SIZE
+// @param port [in] - port number in url, array length is PORT_SIZE
 // @return true for success or false for failure
 bool sky_parse_url(char * url, char * host, uint16_t * port);
 
 // print binary buffer in HEX to console
-// @param buff - binary buffer
-// @param len - buffer length
+// @param buff [in] - binary buffer
+// @param len [in] - buffer length
 void print_buff(uint8_t *buff, uint32_t len);
 
 // print binary buffer in HEX to array
-// @param buff - binary buffer
-// @param len - buffer length
-// @param hex_buff - HEX buffer
-// @param hex_buff_len - HEX buffer length
+// @param buff [in] - binary buffer
+// @param len [in] - buffer length
+// @param hex_buff [out] - HEX buffer
+// @param hex_buff_len [in] - HEX buffer length
 // @return the data length in HEX buffer for success, or -1 for failure
 int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len);
 
-// client encodes, encrypts and sends client's location request to Skyhook location service
-// @param buff - data buffer to send out
-// @param buff_len - the length of data buffer
-// @param rq - client's location request
-// @param tx - callback function for sending out data buffer
-// @param url - destination server and port in the format of "elg://host:port/"
-// @param rpc_handler - the RPC call handler to mask the underlying communication details
+// Called by the client to encode, encrypt and send a location request to Skyhook location service.
+// @param rq [in] - client's location request
+// @param rpc_send [in] - callback function for sending out data buffer
+// @param url [in] - destination server and port in the format of "elg://host:port/"
+// @param rpc_handle [out] - the RPC call handle to mask the underlying communication details
 // @return the number of sent bytes (in ELG request) upon success, or -1 upon failure.
-int32_t sky_send_location_request(uint8_t *buff, uint32_t buff_len,
-        struct location_rq_t * rq,
-        sky_tx_fn tx, char * url, void * rpc_handler);
+int32_t sky_send_location_request(struct location_rq_t * rq,
+        sky_client_send_fn rpc_send, char * url, void * rpc_handle);
 
-// client receives, decrypts and decodes Skyhook location service's response
-// @param buff - data buffer to store the received data
-// @param buff_len - the length of data buffer
-// @param rsp - server's location response
-// @param rx - callback function for receiving data
-// @param rpc_handler - the RPC call handler to mask the underlying communication details
+// Called by the client to receive, decrypt and decode Skyhook location service's response.
+// @param rsp [out] - server's location response
+// @param rpc_recv [in] - callback function for receiving data
+// @param rpc_handle [in] - the RPC call handle to mask the underlying communication details
 // @return the number of received bytes (in ELG response) upon success, or -1 upon failure.
-int32_t sky_receive_location_response(uint8_t *buff, uint32_t buff_len,
-        struct location_rsp_t *rsp,
-        sky_rx_fn rx, void * rpc_handler);
+int32_t sky_recv_location_response(struct location_rsp_t *rsp,
+        sky_client_recv_fn rpc_recv, void * rpc_handle);
+
+// Called by the client to query location.
+// - Simple blocking call to invoke sky_send_location_request() and sky_recv_location_response() automatically.
+// - If nonblocking calls are desirable, invoke sky_send_location_request() and sky_recv_location_response() directly
+//   instead of invoking this simple blocking call.
+// @param rq [in] - client's location request
+// @param rpc_send [in] - callback function for sending out data buffer
+// @param url [in] - destination server and port in the format of "elg://host:port/"
+// @param rsp [out] - server's location response
+// @param rpc_recv [in] - callback function for receiving data
+// @param rpc_handle [in] - the RPC call handle for tx and rx
+// @return true for success, or false for failure
+bool sky_query_location(
+        struct location_rq_t * rq, sky_client_send_fn rpc_send, char * url,
+        struct location_rsp_t *rsp, sky_client_recv_fn rpc_recv, void * rpc_handle);
 
 #endif
 

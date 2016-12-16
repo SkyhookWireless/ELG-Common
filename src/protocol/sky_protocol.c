@@ -18,12 +18,19 @@
 // parse url
 inline
 bool sky_parse_url(char * url, char * host, uint16_t * port) {
+
+    if (strlen(url) > URL_SIZE || strlen(host) > HOST_SIZE) {
+        perror("url or host length is too big");
+        return false;
+    }
+
     uint32_t val = 0;
     if (sscanf(url, "elg://%[^:]%*[:]%u/", host, &val) != 2) {
         perror("ERROR: sky_parse_url() received wrong url; expected url format is 'elg://host:port/'");
         return false;
     }
     *port = (uint16_t)val;
+
     return true;
 }
 
@@ -991,12 +998,14 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
     return 0; // success
 }
 
-int32_t sky_send_location_request(uint8_t *buff, uint32_t buff_len,
-        struct location_rq_t * rq,
-        sky_tx_fn tx, char * url, void * rpc_handler) {
+int32_t sky_send_location_request(struct location_rq_t * rq,
+        sky_client_send_fn rpc_send, char * url, void * rpc_handle) {
+
+    uint8_t buff[SKY_PROT_BUFF_LEN];
+    memset(buff, 0, sizeof(buff));
 
     // encode into ELGv2 binary protocol
-    int32_t cnt = sky_encode_req_bin(buff, buff_len, rq);
+    int32_t cnt = sky_encode_req_bin(buff, sizeof(buff), rq);
     if (cnt < 0) {
         perror("encode binary protocol failed");
         return -1;
@@ -1021,22 +1030,22 @@ int32_t sky_send_location_request(uint8_t *buff, uint32_t buff_len,
     char host[HOST_SIZE];
     uint16_t port = 0; // max port number is 65535
     sky_parse_url(url, host, &port);
-    cnt = tx(buff, cnt, host, port, rpc_handler);
+    cnt = rpc_send(buff, cnt, host, port, rpc_handle);
     if (cnt < 0) {
         perror("failed to send location request");
     }
     return cnt;
 }
 
-int32_t sky_receive_location_response(uint8_t *buff, uint32_t buff_len,
-        struct location_rsp_t *rsp,
-        sky_rx_fn rx, void * rpc_handler) {
+int32_t sky_recv_location_response(struct location_rsp_t *rsp,
+        sky_client_recv_fn rpc_recv, void * rpc_handle) {
 
-    memset(buff, 0, buff_len);
+    uint8_t buff[SKY_PROT_BUFF_LEN];
+    memset(buff, 0, sizeof(buff));
     memset(&rsp->location_ext, 0, sizeof(rsp->location_ext));
 
     // receive binary data from server to client
-    int32_t cnt = rx(buff, buff_len, rpc_handler);
+    int32_t cnt = rpc_recv(buff, sizeof(buff), rpc_handle);
     if (cnt < 0) {
         perror("failed to receive location response");
         return -1;
@@ -1054,10 +1063,32 @@ int32_t sky_receive_location_response(uint8_t *buff, uint32_t buff_len,
     puts("---------------------\n");
 
     // decode from ELGv2 binary protocol
-    if (sky_decode_resp_bin(buff, buff_len, rsp) < 0) {
+    if (sky_decode_resp_bin(buff, sizeof(buff), rsp) < 0) {
         perror("failed to decode response");
         return -1;
     }
 
     return cnt;
+}
+
+bool sky_query_location(
+        struct location_rq_t * rq, sky_client_send_fn rpc_send, char * url,
+        struct location_rsp_t *rsp, sky_client_recv_fn rpc_recv, void * rpc_handle) {
+
+    int32_t cnt = sky_send_location_request(rq, rpc_send, url, rpc_handle);
+    if (cnt < 0) {
+        perror("Failed to send location request\n");
+        return false;
+    }
+
+    memset(&rsp->location_ext, 0, sizeof(rsp->location_ext));
+    memcpy(&rsp->key, &rq->key, sizeof(rsp->key));
+
+    cnt = sky_recv_location_response(rsp, rpc_recv, rpc_handle);
+    if (cnt < 0) {
+        perror("Failed to receive location response\n");
+        return false;
+    }
+
+    return true;
 }
