@@ -143,36 +143,6 @@ int32_t get_http_timestamp(char *tbuf, uint32_t tbuf_len) {
     return strftime(tbuf, tbuf_len, "%a, %d %b %Y %H:%M:%S %Z", &tm);
 }
 
-int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len) {
-    uint32_t i;
-    char *p = (char *)hex_buff;
-    uint32_t total = buff_len * 3;
-
-    if (hex_buff_len < total)
-        return -1;
-
-    for (i = 0; i < buff_len; ++i) {
-        p += sprintf(p, "%02X ", buff[i]);
-    }
-    *(p - 1) = '\0'; // overwrite the last space by \0.
-    return (int32_t) (p - (char *)hex_buff);
-}
-
-void print_buff(uint8_t *buff, uint32_t len) {
-    uint32_t i;
-    uint32_t j = 0;
-
-    for (i = 0; i < len; i++) {
-        printf("%02X ", buff[i]);
-
-        if (++j > 15) {
-            j = 0;
-            printf("\n");
-        }
-    }
-    printf("\n");
-}
-
 /* search buff for start and end tags
  * resultant string pointer is in p
  * length returned

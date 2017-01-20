@@ -1,9 +1,10 @@
 /************************************************
- * Authors: Istvan Sleder and Marwan Kallal
+ * Authors: Liang Zhao and Ted Boinske
  * 
- * Company: Skyhook Wireless
+ * Company: Skyhook
  *
  ************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,25 @@
 #include <float.h>
 #include "sky_crypt.h"
 #include "sky_protocol.h"
+
+// parse url
+inline
+bool sky_parse_url(char * url, char * host, uint16_t * port) {
+
+    if (strlen(url) > URL_SIZE || strlen(host) > HOST_SIZE) {
+        perror("url or host length is too big");
+        return false;
+    }
+
+    uint32_t val = 0;
+    if (sscanf(url, "elg://%[^:]%*[:]%u/", host, &val) != 2) {
+        perror("ERROR: sky_parse_url() received wrong url; expected url format is 'elg://host:port/'");
+        return false;
+    }
+    *port = (uint16_t)val;
+
+    return true;
+}
 
 // set the flag of an access point to claim the device is currently connected
 inline
@@ -305,10 +325,41 @@ uint32_t sky_get_partner_id_from_rq_header(uint8_t *buff, uint32_t buff_len) {
     return 0;
 }
 
+int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uint32_t buff_len) {
+    uint32_t i;
+    char *p = (char *)hex_buff;
+    uint32_t total = buff_len * 3;
+
+    if (hex_buff_len < total)
+        return -1;
+
+    for (i = 0; i < buff_len; ++i) {
+        p += sprintf(p, "%02X ", buff[i]);
+    }
+    *(p - 1) = '\0'; // overwrite the last space by \0.
+    return (int32_t) (p - (char *)hex_buff);
+}
+
+void print_buff(uint8_t *buff, uint32_t len) {
+    uint32_t i;
+    uint32_t j = 0;
+
+    for (i = 0; i < len; i++) {
+        printf("%02X ", buff[i]);
+
+        if (++j > 15) {
+            j = 0;
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+
 // received by the server from the client
 /* decode binary data from client, result is in the location_req_t struct */
 /* binary encoded data in buff from client with data */
-int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rq_t *creq) {
 
     memset(&creq->header, 0, sizeof(creq->header));
@@ -837,7 +888,7 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
 
 // received by the client from the server
 /* decodes the binary data and the result is in the location_resp_t struct */
-int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
+int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
         struct location_rsp_t *cresp) {
 
     memset(&cresp->header, 0, sizeof(cresp->header));
@@ -945,4 +996,99 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         adjust_data_entry(buff, buff_len, sizeof(sky_rsp_header_t) + payload_offset, p_entry_ex);
     }
     return 0; // success
+}
+
+int32_t sky_send_location_request(struct location_rq_t * rq,
+        sky_client_send_fn rpc_send, char * url, void * rpc_handle) {
+
+    uint8_t buff[SKY_PROT_BUFF_LEN];
+    memset(buff, 0, sizeof(buff));
+
+    // encode into ELGv2 binary protocol
+    int32_t cnt = sky_encode_req_bin(buff, sizeof(buff), rq);
+    if (cnt < 0) {
+        perror("encode binary protocol failed");
+        return -1;
+    }
+
+    puts("\n------ encoded packet -------");
+    print_buff(buff, cnt);
+    puts("---------------------\n");
+
+    // encrypt payload with AES
+    if (sky_aes_encrypt(buff + sizeof(sky_rq_header_t), cnt - sizeof(sky_rq_header_t) - sizeof(sky_checksum_t),
+            rq->key.aes_key, buff + sizeof(sky_rq_header_t) - sizeof(rq->header.iv)) == -1) {
+        perror("failed to encrypt request");
+        return -1;
+    }
+
+    puts("\n------ encrypted sent packet -------");
+    print_buff(buff, cnt);
+    puts("---------------------\n");
+
+    // send binary data from client to server
+    char host[HOST_SIZE];
+    uint16_t port = 0; // max port number is 65535
+    sky_parse_url(url, host, &port);
+    cnt = rpc_send(buff, cnt, host, port, rpc_handle);
+    if (cnt < 0) {
+        perror("failed to send location request");
+    }
+    return cnt;
+}
+
+int32_t sky_recv_location_response(struct location_rsp_t *rsp,
+        sky_client_recv_fn rpc_recv, void * rpc_handle) {
+
+    uint8_t buff[SKY_PROT_BUFF_LEN];
+    memset(buff, 0, sizeof(buff));
+    memset(&rsp->location_ext, 0, sizeof(rsp->location_ext));
+
+    // receive binary data from server to client
+    int32_t cnt = rpc_recv(buff, sizeof(buff), rpc_handle);
+    if (cnt < 0) {
+        perror("failed to receive location response");
+        return -1;
+    }
+
+    // decrypt payload with AES
+    if (sky_aes_decrypt(buff + sizeof(sky_rsp_header_t), cnt - sizeof(sky_rsp_header_t) - sizeof(sky_checksum_t),
+            rsp->key.aes_key, buff + sizeof(sky_rsp_header_t) - sizeof(rsp->header.iv)) != 0) {
+        perror("failed to decrypt response");
+        return -1;
+    }
+
+    puts("\n------ decrypted recv packet -------");
+    print_buff(buff, cnt);
+    puts("---------------------\n");
+
+    // decode from ELGv2 binary protocol
+    if (sky_decode_resp_bin(buff, sizeof(buff), rsp) < 0) {
+        perror("failed to decode response");
+        return -1;
+    }
+
+    return cnt;
+}
+
+bool sky_query_location(
+        struct location_rq_t * rq, sky_client_send_fn rpc_send, char * url,
+        struct location_rsp_t *rsp, sky_client_recv_fn rpc_recv, void * rpc_handle) {
+
+    int32_t cnt = sky_send_location_request(rq, rpc_send, url, rpc_handle);
+    if (cnt < 0) {
+        perror("Failed to send location request\n");
+        return false;
+    }
+
+    memset(&rsp->location_ext, 0, sizeof(rsp->location_ext));
+    memcpy(&rsp->key, &rq->key, sizeof(rsp->key));
+
+    cnt = sky_recv_location_response(rsp, rpc_recv, rpc_handle);
+    if (cnt < 0) {
+        perror("Failed to receive location response\n");
+        return false;
+    }
+
+    return true;
 }
