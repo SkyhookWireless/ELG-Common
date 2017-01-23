@@ -1,43 +1,129 @@
+#include <stdio.h>
 #include "sky_cache.h"
+#include "sky_util.h"
 
 // cache array
-static struct cache_entry *cache = NULL;
+static sky_cache_t cache;
 
-// cache array size
-static uint32_t cache_size = 0;
+/**
+ * Copy byte array.
+ * @param to : destination array
+ * @param from : source array
+ * @param size : size of the array to copy
+ * @return true on success; false on failure.
+ */
+bool copy_bytes(char * to, const char * from, uint32_t size) {
+    if (!to || !from) {
+        return false;
+    }
+    uint32_t i = 0;
+    for (; i<size; ++i) {
+        to[i] = from[i];
+    }
+    return true;
+}
+
+/**
+ * Compare the key in cache.
+ * @param idx : index in cache to compare
+ * @param key : the key to compare
+ * @return true on equivalent; false on different.
+ */
+bool compare_cache_key(uint32_t idx, const char * key) {
+    if (idx >= MAX_CACHE_SIZE) {
+        return false;
+    }
+    uint8_t i = 0;
+    for (; i<sizeof(cache.buf[idx].key); ++i) {
+        if (cache.buf[idx].key[i] != key[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Compare the value in cache.
+ * @param idx : index in cache to compare
+ * @param value : the value to compare
+ * @return true on equivalent; false on different.
+ */
+bool compare_cache_value(uint32_t idx, int8_t value) {
+    if (cache.buf[idx].value == value) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 /**
  * Create a cache in memory.
  * @param size : the size of the cache
  * @return true on success; false on failure.
  */
-bool create_cache(uint32_t size) {
-    cache_size = size;
-    cache = (struct cache_entry *)malloc(sizeof(struct cache_entry) * size);
-    if (cache) {
-        return false; // failure
-    } else {
-        return true; // success
-    }
+void create_cache(uint32_t size) {
+    cache.buf_size = size;
 }
 
 /**
  * Delete a cache.
  */
 void delete_cache() {
-    if (cache != NULL) {
-        free(cache);
-        cache = NULL;
+    cache.buf_size = 0;
+}
+
+/**
+ * Save cache in file.
+ * @return true on success; false on failure.
+ */
+bool save_cache() {
+    FILE *fp = fopen(SKY_CACHE_FILENAME, "w");
+    if (!fp) {
+        return false;
     }
-    cache_size = 0;
+    fprintf(fp, "%d\n", cache.buf_size);
+    uint32_t i = 0;
+    for (; i<cache.buf_size; ++i) {
+        uint8_t j = 0;
+        for (; j<sizeof(cache.buf[i].key); ++j) {
+            fprintf(fp, "%02X", cache.buf[i].key[j] & 0xFF);
+        }
+        fprintf(fp, " %" SCNd8 "\n", cache.buf[i].value);
+        // SCNd8 - http://stackoverflow.com/questions/26618443/how-to-use-int16-t-or-int32-t-with-functions-like-scanf
+    }
+    fclose(fp);
+    return true;
+}
+
+/**
+ * Load file into cache.
+ * @return true on success; false on failure.
+ */
+bool load_cache() {
+    FILE *fp = fopen(SKY_CACHE_FILENAME, "r");
+    if (!fp) {
+        return false;
+    }
+    fscanf(fp, "%d", &cache.buf_size);
+    uint32_t i = 0;
+    for (; i<cache.buf_size; ++i) {
+        char mac[sizeof(cache.buf[i].key) * 2 + 1];
+        fscanf(fp, "%s %" SCNd8, mac, &cache.buf[i].value);
+        // SCNd8 - http://stackoverflow.com/questions/26618443/how-to-use-int16-t-or-int32-t-with-functions-like-scanf
+        // fscanf uses white space to separate string.
+        hex2bin(mac, sizeof(mac), (uint8_t *)cache.buf[i].key, sizeof(cache.buf[i].key));
+    }
+    fclose(fp);
+    return true;
 }
 
 /**
  * Check if cache is empty.
  * @return true on empty; false on not empty.
  */
-bool isCacheEmpty() {
-    if (cache == NULL && cache_size == 0) {
+bool is_cache_empty() {
+    load_cache();
+    if (cache.buf_size == 0) {
         return true;
     } else {
         return false;
@@ -47,60 +133,51 @@ bool isCacheEmpty() {
 /**
  * Look up the key in cache.
  * @param key : the key to look up
- * @return the value associated with the key on success;
+ * @return the cache entry associated with the key on success;
  *         or NULL on failure.
  */
-char * sky_cache_lookup(const char *key) {
-    struct cache_entry * entry = NULL;
-    HASH_FIND_STR(cache, key, entry);
-    if (entry) {
-        // remove it (so the subsequent add will throw it on the front of the list)
-        HASH_DELETE(hh, cache, entry);
-        HASH_ADD_KEYPTR(hh, cache, entry->key, strlen(entry->key), entry);
-        return entry->value;
+cache_entry_t * sky_cache_lookup(const char *key) {
+    uint32_t i = 0;
+    for (; i<cache.buf_size; ++i) {
+        if (compare_cache_key(i, key)) {
+            return &cache.buf[i];
+        }
     }
     return NULL;
 }
 
 /**
  * Add key-value pairs into the cache.
+ * @param idx : index in cache to add
  * @param key : key to add
  * @param value : value to add
+ * @return true on success; false on failure.
  */
-void sky_cache_add(const char *key, const char *value) {
-    struct cache_entry *entry, *tmp_entry;
-    entry = malloc(sizeof(struct cache_entry));
-    entry->key = strdup(key);
-    entry->value = strdup(value);
-    HASH_ADD_KEYPTR(hh, cache, entry->key, strlen(entry->key), entry);
-
-    // prune the cache to MAX_CACHE_SIZE
-    if (HASH_COUNT(cache) >= MAX_CACHE_SIZE) {
-        HASH_ITER(hh, cache, entry, tmp_entry) {
-            // prune the first entry (loop is based on insertion order so this deletes the oldest item)
-            HASH_DELETE(hh, cache, entry);
-            free(entry->key);
-            free(entry->value);
-            free(entry);
-            break;
-        }
+bool sky_cache_add(uint32_t idx, const char *key, int8_t value) {
+    if (idx >= cache.buf_size) {
+        return false;
     }
+    copy_bytes(cache.buf[idx].key, key, sizeof(cache.buf[idx].key));
+    cache.buf[idx].value = value;
+    return true;
 }
 
 /**
  * Create and cache an array of APs.
+ * Note: automatically truncate the APs more than MAX_CACHE_SIZE.
  * @param aps : array pointer of APs
  * @param aps_size : the size of the array of APs
  */
-void cacheAPs(const struct ap_t *aps, uint32_t aps_size) {
+void cache_aps(const struct ap_t *aps, uint32_t aps_size) {
     if (aps_size > MAX_CACHE_SIZE) {
         aps_size = MAX_CACHE_SIZE;
     }
     create_cache(aps_size);
     uint32_t i = 0;
-    for (i=0; i<aps_size; ++i) {
-        sky_cache_add((char *)aps[i].MAC, (char *)&aps[i].rssi);
+    for (; i<aps_size; ++i) {
+        sky_cache_add(i, (char *)aps[i].MAC, aps[i].rssi);
     }
+    save_cache();
 }
 
 /**
@@ -110,13 +187,13 @@ void cacheAPs(const struct ap_t *aps, uint32_t aps_size) {
  * @param p : percentage to satisfy matching criteria
  * @return true on matching; false on not-matching.
  */
-bool isCacheMatch(const struct ap_t *aps, uint32_t aps_size, float p) {
+bool is_cache_match(const struct ap_t *aps, uint32_t aps_size, float p) {
     if (aps_size > MAX_CACHE_SIZE) {
         aps_size = MAX_CACHE_SIZE;
     }
     uint32_t n = 0, i;
     for (i=0; i<aps_size; ++i) {
-        if (!sky_cache_lookup((char *)aps[i].MAC)) {
+        if (sky_cache_lookup((char *)aps[i].MAC) != NULL) {
             ++n;
         }
     }
@@ -134,16 +211,16 @@ bool isCacheMatch(const struct ap_t *aps, uint32_t aps_size, float p) {
  * @param match_percentage : the percentage to satisfy matching criteria
  * @return true on matching; false on not matching.
  */
-bool checkCacheMatch(const struct location_rq_t* req, float match_percentage) {
-    if (isCacheEmpty()) {
-        cacheAPs(req->aps, req->ap_count);
+bool check_cache_match(const struct location_rq_t* req, float match_percentage) {
+    if (is_cache_empty()) {
+        cache_aps(req->aps, req->ap_count);
         return false;
     } else {
-        if (isCacheMatch(req->aps, req->ap_count, match_percentage)) {
+        if (is_cache_match(req->aps, req->ap_count, match_percentage)) {
             return true; // same location, no need to send out location request.
         } else {
             delete_cache();
-            cacheAPs(req->aps, req->ap_count);
+            cache_aps(req->aps, req->ap_count);
             return false;
         }
     }
