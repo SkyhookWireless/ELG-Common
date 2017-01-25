@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "sky_cache.h"
 #include "sky_util.h"
 
@@ -105,11 +106,13 @@ bool compare_cache_value(uint32_t idx, const char * value) {
  * @param key_size : the size of key
  * @param value_size : the size of value
  */
-void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size, uint32_t key_size, uint32_t value_size) {
+void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size,
+        uint32_t key_size, uint32_t value_size) {
     cache.type = type;
     cache.buf_size = cache_size;
     cache.key_size = key_size;
     cache.value_size = value_size;
+    cache.timestamp = (uint32_t)time(NULL); // in seconds
 }
 
 /**
@@ -121,6 +124,7 @@ void delete_cache(enum SKY_DATA_TYPE type) {
     cache.buf_size = 0;
     cache.key_size = 0;
     cache.value_size = 0;
+    cache.timestamp = 0;
 }
 
 /**
@@ -316,6 +320,11 @@ void sky_cache_deinit() {
 bool check_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage) {
     switch (type) {
     case DATA_TYPE_AP:
+        if ((cache.buf_size < MIN_CACHE_APS)
+                || (time(NULL) - cache.timestamp > MAX_CACHE_TIME)) {
+            // delete cache if cache size is too small or cache timestamp is too long
+            delete_cache(type);
+        }
         if (is_cache_empty()) {
             cache_aps(req->aps, req->ap_count);
             return false;

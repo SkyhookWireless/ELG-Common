@@ -6,6 +6,8 @@
 #include "sky_protocol.h"
 
 #define MAX_CACHE_SIZE               100
+#define MIN_CACHE_APS                5
+#define MAX_CACHE_TIME               3600 // in seconds
 #define SKY_AP_CACHE_FILENAME        "sky_ap_cache_file.data"
 
 typedef struct cache_entry_t {
@@ -16,9 +18,10 @@ typedef struct cache_entry_t {
 typedef struct sky_cache_t {
     enum SKY_DATA_TYPE type;
     cache_entry_t buf[MAX_CACHE_SIZE];
-    uint32_t buf_size; // actual size of cache
+    uint32_t buf_size;    // actual size of cache
     uint32_t key_size;
     uint32_t value_size;
+    uint32_t timestamp;   // in seconds
 } sky_cache_t;
 
 /**
