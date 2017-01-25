@@ -5,29 +5,36 @@
 #include <string.h>
 #include "sky_protocol.h"
 
-#define MAX_CACHE_SIZE            100
-#define SKY_CACHE_FILENAME        "sky_cache_file.data"
+#define MAX_CACHE_SIZE               100
+#define SKY_AP_CACHE_FILENAME        "sky_ap_cache_file.data"
 
 typedef struct cache_entry_t {
-    char key[6];
-    int8_t value;
+    char * key;
+    char * value;
 } cache_entry_t;
 
 typedef struct sky_cache_t {
+    enum SKY_DATA_TYPE type;
     cache_entry_t buf[MAX_CACHE_SIZE];
     uint32_t buf_size; // actual size of cache
+    uint32_t key_size;
+    uint32_t value_size;
 } sky_cache_t;
 
 /**
  * Create a cache in memory.
- * @param size : the size of the cache
+ * @param type : cache data type
+ * @param cache_size : the size of the cache
+ * @param key_size : the size of key
+ * @param value_size : the size of value
  */
-void create_cache(uint32_t size);
+void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size, uint32_t key_size, uint32_t value_size);
 
 /**
  * Delete a cache.
+ * @param type : cache data type
  */
-void delete_cache();
+void delete_cache(enum SKY_DATA_TYPE type);
 
 /**
  * Check if cache is empty.
@@ -41,7 +48,7 @@ bool is_cache_empty();
  * @return the cache entry associated with the key on success;
  *         or NULL on failure.
  */
-cache_entry_t * sky_cache_lookup(const char *key);
+cache_entry_t * sky_cache_lookup(const char * key);
 
 /**
  * Add key-value pairs into the cache.
@@ -50,7 +57,7 @@ cache_entry_t * sky_cache_lookup(const char *key);
  * @param value : value to add
  * @return true on success; false on failure.
  */
-bool sky_cache_add(uint32_t idx, const char *key, int8_t value);
+bool sky_cache_add(uint32_t idx, const char * key, const char * value);
 
 /**
  * Create and cache an array of APs.
@@ -58,7 +65,7 @@ bool sky_cache_add(uint32_t idx, const char *key, int8_t value);
  * @param aps : array pointer of APs
  * @param aps_size : the size of the array of APs
  */
-void cache_aps(const struct ap_t *aps, uint32_t aps_size);
+void cache_aps(const struct ap_t * aps, uint32_t aps_size);
 
 /**
  * Check if the cache matching is satisfied.
@@ -67,15 +74,29 @@ void cache_aps(const struct ap_t *aps, uint32_t aps_size);
  * @param p : percentage to satisfy matching criteria
  * @return true on matching; false on not-matching.
  */
-bool is_cache_match(const struct ap_t *aps, uint32_t aps_size, float p);
+bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p);
 
 /**
- * Check if caching matching is satisfied.
+ * Initialize cache with proper memory allocation.
+ * @param key_size : the size of key in bytes
+ * @param value_size : the size of value in bytes
+ * @return true on success; false on failure.
+ */
+bool sky_cache_init(uint32_t key_size, uint32_t value_size);
+
+/**
+ * Deinitialize cache with proper memory reclamation.
+ */
+void sky_cache_deinit();
+
+/**
+ * Check if cache matching is satisfied.
  * If so, it is not necessary to query locations.
  * @param req : location request structure
+ * @param type : cache data type
  * @param match_percentage : the percentage to satisfy matching criteria
  * @return true on matching; false on not matching.
  */
-bool check_cache_match(const struct location_rq_t* req, float match_percentage);
+bool check_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage);
 
 #endif // #ifndef SKY_CACHE_H
