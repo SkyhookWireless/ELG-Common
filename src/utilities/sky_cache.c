@@ -100,13 +100,13 @@ bool compare_cache_value(uint32_t idx, const char * value) {
 }
 
 /**
- * Create a cache in memory.
+ * Initialize a cache.
  * @param type : cache data type
  * @param cache_size : the size of the cache
  * @param key_size : the size of key
  * @param value_size : the size of value
  */
-void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size,
+void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t cache_size,
         uint32_t key_size, uint32_t value_size) {
     cache.type = type;
     cache.buf_size = cache_size;
@@ -116,10 +116,10 @@ void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size,
 }
 
 /**
- * Delete a cache.
+ * Reset a cache.
  * @param type : cache data type
  */
-void delete_cache(enum SKY_DATA_TYPE type) {
+void sky_cache_reset(enum SKY_DATA_TYPE type) {
     cache.type = DATA_TYPE_PAD;
     cache.buf_size = 0;
     cache.key_size = 0;
@@ -190,7 +190,7 @@ bool load_cache(enum SKY_DATA_TYPE type) {
  * Check if cache is empty.
  * @return true on empty; false on not empty.
  */
-bool is_cache_empty() {
+bool is_sky_cache_empty() {
     load_cache(DATA_TYPE_AP);
     if (cache.buf_size == 0) {
         return true;
@@ -241,7 +241,7 @@ void cache_aps(const struct ap_t * aps, uint32_t aps_size) {
     if (aps_size > MAX_CACHE_SIZE) {
         aps_size = MAX_CACHE_SIZE;
     }
-    create_cache(DATA_TYPE_AP, aps_size, MAC_SIZE, sizeof(int8_t));
+    sky_cache_init(DATA_TYPE_AP, aps_size, MAC_SIZE, sizeof(int8_t));
     uint32_t i = 0;
     for (; i<aps_size; ++i) {
         sky_cache_add(i, (char *)aps[i].MAC, (char *)&aps[i].rssi);
@@ -274,12 +274,12 @@ bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
 }
 
 /**
- * Initialize cache with proper memory allocation.
+ * Create cache with proper memory allocation.
  * @param key_size : the size of key in bytes
  * @param value_size : the size of value in bytes
  * @return true on success; false on failure.
  */
-bool sky_cache_init(uint32_t key_size, uint32_t value_size) {
+bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
     uint32_t i = 0;
     for (; i<MAX_CACHE_SIZE; ++i) {
         cache.buf[i].key = (char *)malloc(key_size);
@@ -295,9 +295,9 @@ bool sky_cache_init(uint32_t key_size, uint32_t value_size) {
 }
 
 /**
- * Deinitialize cache with proper memory reclamation.
+ * Free cache with proper memory reclamation.
  */
-void sky_cache_deinit() {
+void sky_cache_free() {
     uint32_t i = 0;
     for (; i<MAX_CACHE_SIZE; ++i) {
         if (cache.buf[i].key != NULL) {
@@ -323,16 +323,16 @@ bool check_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type
         if ((cache.buf_size < MIN_CACHE_APS)
                 || (time(NULL) - cache.timestamp > MAX_CACHE_TIME)) {
             // delete cache if cache size is too small or cache timestamp is too long
-            delete_cache(type);
+            sky_cache_reset(type);
         }
-        if (is_cache_empty()) {
+        if (is_sky_cache_empty()) {
             cache_aps(req->aps, req->ap_count);
             return false;
         } else {
             if (is_ap_cache_match(req->aps, req->ap_count, match_percentage)) {
                 return true; // same location, no need to send out location request.
             } else {
-                delete_cache(type);
+                sky_cache_reset(type);
                 cache_aps(req->aps, req->ap_count);
                 return false;
             }

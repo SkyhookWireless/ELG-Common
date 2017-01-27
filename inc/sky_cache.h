@@ -24,26 +24,43 @@ typedef struct sky_cache_t {
     uint32_t timestamp;   // in seconds
 } sky_cache_t;
 
+//
+// Generic cache APIs
+//
+
 /**
- * Create a cache in memory.
+ * Create cache with proper memory allocation.
+ * @param key_size : the size of key in bytes
+ * @param value_size : the size of value in bytes
+ * @return true on success; false on failure.
+ */
+bool sky_cache_create(uint32_t key_size, uint32_t value_size);
+
+/**
+ * Free cache with proper memory reclamation.
+ */
+void sky_cache_free();
+
+/**
+ * Initialize a cache.
  * @param type : cache data type
  * @param cache_size : the size of the cache
  * @param key_size : the size of key
  * @param value_size : the size of value
  */
-void create_cache(enum SKY_DATA_TYPE type, uint32_t cache_size, uint32_t key_size, uint32_t value_size);
+void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t cache_size, uint32_t key_size, uint32_t value_size);
 
 /**
- * Delete a cache.
+ * Reset a cache.
  * @param type : cache data type
  */
-void delete_cache(enum SKY_DATA_TYPE type);
+void sky_cache_reset(enum SKY_DATA_TYPE type);
 
 /**
  * Check if cache is empty.
  * @return true on empty; false on not empty.
  */
-bool is_cache_empty();
+bool is_sky_cache_empty();
 
 /**
  * Look up the key in cache.
@@ -62,6 +79,10 @@ cache_entry_t * sky_cache_lookup(const char * key);
  */
 bool sky_cache_add(uint32_t idx, const char * key, const char * value);
 
+//
+// The AP wrapper of cache APIs
+//
+
 /**
  * Create and cache an array of APs.
  * Note: automatically truncate the APs more than MAX_CACHE_SIZE.
@@ -79,18 +100,9 @@ void cache_aps(const struct ap_t * aps, uint32_t aps_size);
  */
 bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p);
 
-/**
- * Initialize cache with proper memory allocation.
- * @param key_size : the size of key in bytes
- * @param value_size : the size of value in bytes
- * @return true on success; false on failure.
- */
-bool sky_cache_init(uint32_t key_size, uint32_t value_size);
-
-/**
- * Deinitialize cache with proper memory reclamation.
- */
-void sky_cache_deinit();
+//
+// ELG client caching APIs
+//
 
 /**
  * Check if cache matching is satisfied.
