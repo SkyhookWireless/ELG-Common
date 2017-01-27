@@ -16,6 +16,7 @@ typedef struct cache_entry_t {
 } cache_entry_t;
 
 typedef struct sky_cache_t {
+    bool is_created;
     enum SKY_DATA_TYPE type;
     cache_entry_t buf[MAX_CACHE_SIZE];
     uint32_t buf_size;    // actual size of cache
@@ -54,13 +55,13 @@ void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t cache_size, uint32_t key_s
  * Reset a cache.
  * @param type : cache data type
  */
-void sky_cache_reset(enum SKY_DATA_TYPE type);
+void sky_cache_cleanup(enum SKY_DATA_TYPE type);
 
 /**
  * Check if cache is empty.
  * @return true on empty; false on not empty.
  */
-bool is_sky_cache_empty();
+bool sky_is_cache_empty();
 
 /**
  * Look up the key in cache.
@@ -89,7 +90,7 @@ bool sky_cache_add(uint32_t idx, const char * key, const char * value);
  * @param aps : array pointer of APs
  * @param aps_size : the size of the array of APs
  */
-void cache_aps(const struct ap_t * aps, uint32_t aps_size);
+void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size);
 
 /**
  * Check if the cache matching is satisfied.
@@ -98,7 +99,7 @@ void cache_aps(const struct ap_t * aps, uint32_t aps_size);
  * @param p : percentage to satisfy matching criteria
  * @return true on matching; false on not-matching.
  */
-bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p);
+bool sky_is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p);
 
 //
 // ELG client caching APIs
@@ -112,6 +113,6 @@ bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p);
  * @param match_percentage : the percentage to satisfy matching criteria
  * @return true on matching; false on not matching.
  */
-bool check_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage);
+bool sky_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage);
 
 #endif // #ifndef SKY_CACHE_H

@@ -14,7 +14,7 @@ static sky_cache_t cache;
  * @param size : size of the array to copy
  * @return true on success; false on failure.
  */
-bool copy_bytes(char * to, const char * from, uint32_t size) {
+bool sky_copy_bytes(char * to, const char * from, uint32_t size) {
     if (!to || !from) {
         return false;
     }
@@ -29,23 +29,23 @@ bool copy_bytes(char * to, const char * from, uint32_t size) {
 // Note: for all seters and getters, it is assumed that the cache memory (heap) has been allocated.
 //
 
-bool ap_get_cache_key(uint32_t idx, char * key) {
+bool sky_ap_get_cache_key(uint32_t idx, char * key) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.buf_size || key == NULL) {
         return false;
     }
-    copy_bytes(key, cache.buf[idx].key, cache.key_size);
+    sky_copy_bytes(key, cache.buf[idx].key, cache.key_size);
     return true;
 }
 
-bool ap_set_cache_key(uint32_t idx, const char * key) {
+bool sky_ap_set_cache_key(uint32_t idx, const char * key) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.buf_size || key == NULL) {
         return false;
     }
-    copy_bytes(cache.buf[idx].key, key, cache.key_size);
+    sky_copy_bytes(cache.buf[idx].key, key, cache.key_size);
     return true;
 }
 
-bool ap_get_cache_value(uint32_t idx, int8_t value) {
+bool sky_ap_get_cache_value(uint32_t idx, int8_t value) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.buf_size) {
         return false;
     }
@@ -53,7 +53,7 @@ bool ap_get_cache_value(uint32_t idx, int8_t value) {
     return true;
 }
 
-bool ap_set_cache_value(uint32_t idx, int8_t value) {
+bool sky_ap_set_cache_value(uint32_t idx, int8_t value) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.buf_size) {
         return false;
     }
@@ -67,7 +67,7 @@ bool ap_set_cache_value(uint32_t idx, int8_t value) {
  * @param key : the key to compare
  * @return true on equivalent; false on different.
  */
-bool compare_cache_key(uint32_t idx, const char * key) {
+bool sky_compare_cache_key(uint32_t idx, const char * key) {
     if (idx >= MAX_CACHE_SIZE) {
         return false;
     }
@@ -86,7 +86,7 @@ bool compare_cache_key(uint32_t idx, const char * key) {
  * @param value : the value to compare
  * @return true on equivalent; false on different.
  */
-bool compare_cache_value(uint32_t idx, const char * value) {
+bool sky_compare_cache_value(uint32_t idx, const char * value) {
     if (idx >= MAX_CACHE_SIZE) {
         return false;
     }
@@ -119,7 +119,7 @@ void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t cache_size,
  * Reset a cache.
  * @param type : cache data type
  */
-void sky_cache_reset(enum SKY_DATA_TYPE type) {
+void sky_cache_cleanup(enum SKY_DATA_TYPE type) {
     cache.type = DATA_TYPE_PAD;
     cache.buf_size = 0;
     cache.key_size = 0;
@@ -190,7 +190,7 @@ bool load_cache(enum SKY_DATA_TYPE type) {
  * Check if cache is empty.
  * @return true on empty; false on not empty.
  */
-bool is_sky_cache_empty() {
+bool sky_is_cache_empty() {
     load_cache(DATA_TYPE_AP);
     if (cache.buf_size == 0) {
         return true;
@@ -208,7 +208,7 @@ bool is_sky_cache_empty() {
 cache_entry_t * sky_cache_lookup(const char *key) {
     uint32_t i = 0;
     for (; i<cache.buf_size; ++i) {
-        if (compare_cache_key(i, key)) {
+        if (sky_compare_cache_key(i, key)) {
             return &cache.buf[i];
         }
     }
@@ -226,8 +226,8 @@ bool sky_cache_add(uint32_t idx, const char * key, const char * value) {
     if (idx >= cache.buf_size) {
         return false;
     }
-    copy_bytes(cache.buf[idx].key, key, cache.key_size);
-    copy_bytes(cache.buf[idx].value, value, cache.value_size);
+    sky_copy_bytes(cache.buf[idx].key, key, cache.key_size);
+    sky_copy_bytes(cache.buf[idx].value, value, cache.value_size);
     return true;
 }
 
@@ -237,7 +237,7 @@ bool sky_cache_add(uint32_t idx, const char * key, const char * value) {
  * @param aps : array pointer of APs
  * @param aps_size : the size of the array of APs
  */
-void cache_aps(const struct ap_t * aps, uint32_t aps_size) {
+void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size) {
     if (aps_size > MAX_CACHE_SIZE) {
         aps_size = MAX_CACHE_SIZE;
     }
@@ -256,7 +256,7 @@ void cache_aps(const struct ap_t * aps, uint32_t aps_size) {
  * @param p : percentage to satisfy matching criteria
  * @return true on matching; false on not-matching.
  */
-bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
+bool sky_is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
     if (aps_size > MAX_CACHE_SIZE) {
         aps_size = MAX_CACHE_SIZE;
     }
@@ -280,6 +280,9 @@ bool is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
  * @return true on success; false on failure.
  */
 bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
+    if (cache.is_created) {
+        return true;
+    }
     uint32_t i = 0;
     for (; i<MAX_CACHE_SIZE; ++i) {
         cache.buf[i].key = (char *)malloc(key_size);
@@ -291,6 +294,7 @@ bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
             return false;
         }
     }
+    cache.is_created = true;
     return true;
 }
 
@@ -307,6 +311,7 @@ void sky_cache_free() {
             free(cache.buf[i].value);
         }
     }
+    cache.is_created = false;
 }
 
 /**
@@ -317,23 +322,23 @@ void sky_cache_free() {
  * @param match_percentage : the percentage to satisfy matching criteria
  * @return true on matching; false on not matching.
  */
-bool check_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage) {
+bool sky_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage) {
     switch (type) {
     case DATA_TYPE_AP:
         if ((cache.buf_size < MIN_CACHE_APS)
                 || (time(NULL) - cache.timestamp > MAX_CACHE_TIME)) {
             // delete cache if cache size is too small or cache timestamp is too long
-            sky_cache_reset(type);
+            sky_cache_cleanup(type);
         }
-        if (is_sky_cache_empty()) {
-            cache_aps(req->aps, req->ap_count);
+        if (sky_is_cache_empty()) {
+            sky_cache_aps(req->aps, req->ap_count);
             return false;
         } else {
-            if (is_ap_cache_match(req->aps, req->ap_count, match_percentage)) {
+            if (sky_is_ap_cache_match(req->aps, req->ap_count, match_percentage)) {
                 return true; // same location, no need to send out location request.
             } else {
-                sky_cache_reset(type);
-                cache_aps(req->aps, req->ap_count);
+                sky_cache_cleanup(type);
+                sky_cache_aps(req->aps, req->ap_count);
                 return false;
             }
         }
