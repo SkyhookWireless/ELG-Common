@@ -103,15 +103,10 @@ bool sky_compare_cache_value(uint32_t idx, const char * value) {
  * Initialize a cache.
  * @param type : cache data type
  * @param num_entries : the number of entries in cache
- * @param key_size : the size of key
- * @param value_size : the size of value
  */
-void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries,
-        uint32_t key_size, uint32_t value_size) {
+void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries) {
     cache.type = type;
     cache.num_entries = num_entries;
-    cache.key_size = key_size;
-    cache.value_size = value_size;
     cache.timestamp = (uint32_t)time(NULL); // in seconds
 }
 
@@ -133,6 +128,7 @@ void sky_cache_clear(enum SKY_DATA_TYPE type) {
  * @return true on success; false on failure.
  */
 bool save_cache(enum SKY_DATA_TYPE type) {
+#ifdef SKY_FILE_SYSTEM_EXISTS
     switch (type) {
     case DATA_TYPE_AP: {
         FILE *fp = fopen(SKY_AP_CACHE_FILENAME, "w");
@@ -155,6 +151,10 @@ bool save_cache(enum SKY_DATA_TYPE type) {
     default:
         return false;
     }
+#else
+    (void)type; // suppress the warning of unused variables
+    return true;
+#endif
 }
 
 /**
@@ -163,6 +163,7 @@ bool save_cache(enum SKY_DATA_TYPE type) {
  * @return true on success; false on failure.
  */
 bool load_cache(enum SKY_DATA_TYPE type) {
+#ifdef SKY_FILE_SYSTEM_EXISTS
     switch (type) {
     case DATA_TYPE_AP: {
         FILE *fp = fopen(SKY_AP_CACHE_FILENAME, "r");
@@ -184,6 +185,10 @@ bool load_cache(enum SKY_DATA_TYPE type) {
     default:
         return false;
     }
+#else
+    (void)type; // suppress the warning of unused variables
+    return true;
+#endif
 }
 
 /**
@@ -241,7 +246,7 @@ void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size) {
     if (aps_size > MAX_CACHE_ELEMENTS) {
         aps_size = MAX_CACHE_ELEMENTS;
     }
-    sky_cache_init(DATA_TYPE_AP, aps_size, MAC_SIZE, sizeof(int8_t));
+    sky_cache_init(DATA_TYPE_AP, aps_size);
     uint32_t i = 0;
     for (; i<aps_size; ++i) {
         sky_cache_add(i, (char *)aps[i].MAC, (char *)&aps[i].rssi);
@@ -283,6 +288,8 @@ bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
     if (cache.is_created) {
         return true;
     }
+    cache.key_size = key_size;
+    cache.value_size = value_size;
     uint32_t i = 0;
     for (; i<MAX_CACHE_ELEMENTS; ++i) {
         cache.entry[i].key = (char *)malloc(key_size);

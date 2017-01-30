@@ -46,10 +46,8 @@ void sky_cache_free();
  * Initialize a cache.
  * @param type : cache data type
  * @param cache_size : the size of the cache
- * @param key_size : the size of key
- * @param value_size : the size of value
  */
-void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries, uint32_t key_size, uint32_t value_size);
+void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries);
 
 /**
  * Reset a cache.

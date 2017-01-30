@@ -12,6 +12,8 @@
 // @param rpc_handle [in] - the RPC call handle for tx and rx
 // @param cache_match_percentage - the percentage to match for scan caching
 // @return true for success, or false for failure
+// @note If a cache match is found, "rsp" is not updated.
+//       The same location response is supposed to be retained in "rsp" by clients.
 enum SKY_CLIENT_CACHE_TYPE sky_query_location_with_caching(
         struct location_rq_t * rq, sky_client_send_fn rpc_send, char * url,
         struct location_rsp_t *rsp, sky_client_recv_fn rpc_recv, void * rpc_handle,
