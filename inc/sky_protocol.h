@@ -45,21 +45,23 @@ extern "C" {
 #define MAX_CELLS               7   // max # of cells
 #define MAX_BLES                5   // max # of blue tooth
 
+#define MAX_LOCATION_EXT        1024 // max char # of full address
+
 // max # of bytes for request buffer
-#define SKY_PROT_RQ_BUFF_LEN                                                 \
-    sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
-    + (sizeof(sky_entry_t) + MAX_MACS * MAC_SIZE)                            \
-    + (sizeof(sky_entry_t) + MAX_IPS * IPV6_SIZE)                            \
-    + (sizeof(sky_entry_t) + MAX_APS * sizeof(struct ap_t))                  \
-    + (sizeof(sky_entry_t) + MAX_GPSS * sizeof(struct gps_t))                \
-    + (sizeof(sky_entry_t) + MAX_CELLS * sizeof(union cell_t))               \
+#define SKY_PROT_RQ_BUFF_LEN                                                  \
+    sizeof(sky_rq_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t)  \
+    + (sizeof(sky_entry_t) + MAX_MACS * MAC_SIZE)                             \
+    + (sizeof(sky_entry_t) + MAX_IPS * IPV6_SIZE)                             \
+    + (sizeof(sky_entry_t) + MAX_APS * sizeof(struct ap_t))                   \
+    + (sizeof(sky_entry_t) + MAX_GPSS * sizeof(struct gps_t))                 \
+    + (sizeof(sky_entry_t) + MAX_CELLS * sizeof(union cell_t))                \
     + (sizeof(sky_entry_t) + MAX_BLES * sizeof(struct ble_t))
 
 // max # of bytes for response buffer
 #define SKY_PROT_RSP_BUFF_LEN                                                 \
     sizeof(sky_rsp_header_t) + sizeof(sky_payload_t) + sizeof(sky_checksum_t) \
     + sizeof(struct location_t) + sizeof(struct location_ext_t)               \
-    + 1024 // the char array of full address
+    + MAX_LOCATION_EXT // the char array of full address
 
 // max # of bytes for both request and response buffer
 #define SKY_PROT_BUFF_LEN                                                     \
@@ -539,6 +541,10 @@ struct location_rsp_t {
     struct location_t location; // location result: lat and lon
 
     struct location_ext_t location_ext; // ext location result: full address, etc.
+
+    char * location_ext_buff; // the char buffer to store the attributes of "location_ext"
+                              // the buffer size should be >= MAX_LOCATION_EXT
+    uint32_t location_ext_buff_size; // the size of "location_ext_buff"
 };
 
 // callback function for sending data from buffer

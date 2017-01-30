@@ -998,6 +998,48 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len,
     return 0; // success
 }
 
+// copy "location_ext" in the response to the client buffer also in the response
+void copy_location_ext_to_rsp_buff(struct location_rsp_t* rsp) {
+    char* p = rsp->location_ext_buff;
+    memcpy(p, rsp->location_ext.street_num,
+            rsp->location_ext.street_num_len);
+    rsp->location_ext.street_num = p;
+    p += rsp->location_ext.street_num_len;
+    memcpy(p, rsp->location_ext.address, rsp->location_ext.address_len);
+    rsp->location_ext.address = p;
+    p += rsp->location_ext.address_len;
+    memcpy(p, rsp->location_ext.city, rsp->location_ext.city_len);
+    rsp->location_ext.city = p;
+    p += rsp->location_ext.city_len;
+    memcpy(p, rsp->location_ext.state, rsp->location_ext.state_len);
+    rsp->location_ext.state = p;
+    p += rsp->location_ext.state_len;
+    memcpy(p, rsp->location_ext.state_code,
+            rsp->location_ext.state_code_len);
+    rsp->location_ext.state_code = p;
+    p += rsp->location_ext.state_code_len;
+    memcpy(p, rsp->location_ext.metro1, rsp->location_ext.metro1_len);
+    rsp->location_ext.metro1 = p;
+    p += rsp->location_ext.metro1_len;
+    memcpy(p, rsp->location_ext.metro2, rsp->location_ext.metro2_len);
+    rsp->location_ext.metro2 = p;
+    p += rsp->location_ext.metro2_len;
+    memcpy(p, rsp->location_ext.postal_code,
+            rsp->location_ext.postal_code_len);
+    rsp->location_ext.postal_code = p;
+    p += rsp->location_ext.postal_code_len;
+    memcpy(p, rsp->location_ext.county, rsp->location_ext.county_len);
+    rsp->location_ext.county = p;
+    p += rsp->location_ext.county_len;
+    memcpy(p, rsp->location_ext.country, rsp->location_ext.country_len);
+    rsp->location_ext.country = p;
+    p += rsp->location_ext.country_len;
+    memcpy(p, rsp->location_ext.country_code,
+            rsp->location_ext.country_code_len);
+    rsp->location_ext.country_code = p;
+    p += rsp->location_ext.country_code_len;
+}
+
 int32_t sky_send_location_request(struct location_rq_t * rq,
         sky_client_send_fn rpc_send, char * url, void * rpc_handle) {
 
@@ -1040,6 +1082,11 @@ int32_t sky_send_location_request(struct location_rq_t * rq,
 int32_t sky_recv_location_response(struct location_rsp_t *rsp,
         sky_client_recv_fn rpc_recv, void * rpc_handle) {
 
+    if (rsp->location_ext_buff_size < MAX_LOCATION_EXT) {
+        perror("location_ext_buff_size is too small (should be >= MAX_LOCATION_EXT)");
+        return -1;
+    }
+
     uint8_t buff[SKY_PROT_BUFF_LEN];
     memset(buff, 0, sizeof(buff));
     memset(&rsp->location_ext, 0, sizeof(rsp->location_ext));
@@ -1067,6 +1114,9 @@ int32_t sky_recv_location_response(struct location_rsp_t *rsp,
         perror("failed to decode response");
         return -1;
     }
+
+    // copy "location_ext" in the response to client buffer
+    copy_location_ext_to_rsp_buff(rsp);
 
     return cnt;
 }
