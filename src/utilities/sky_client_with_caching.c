@@ -12,7 +12,7 @@
 // @param rpc_handle [in] - the RPC call handle for tx and rx
 // @param cache_match_percentage - the percentage to match for scan caching
 // @return true for success, or false for failure
-bool sky_query_location_with_caching(
+enum SKY_CLIENT_CACHE_TYPE sky_query_location_with_caching(
         struct location_rq_t * rq, sky_client_send_fn rpc_send, char * url,
         struct location_rsp_t *rsp, sky_client_recv_fn rpc_recv, void * rpc_handle,
         float cache_match_percentage) {
@@ -24,7 +24,7 @@ bool sky_query_location_with_caching(
     }
     bool rc = sky_query_location(rq, rpc_send, url, rsp, rpc_recv, rpc_handle);
     if (rsp->payload_ext.payload.type == LOCATION_UNABLE_TO_DETERMINE) {
-        sky_cache_cleanup(DATA_TYPE_AP);
+        sky_cache_clear(DATA_TYPE_AP);
     }
     return rc;
 }
