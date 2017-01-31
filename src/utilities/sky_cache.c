@@ -7,33 +7,15 @@
 // cache array
 static sky_cache_t cache;
 
-/**
- * Copy byte array.
- * @param to : destination array
- * @param from : source array
- * @param size : size of the array to copy
- * @return true on success; false on failure.
- */
-bool sky_copy_bytes(char * to, const char * from, uint32_t size) {
-    if (!to || !from) {
-        return false;
-    }
-    uint32_t i = 0;
-    for (; i<size; ++i) {
-        to[i] = from[i];
-    }
-    return true;
-}
-
 //
-// Note: for all seters and getters, it is assumed that the cache memory (heap) has been allocated.
+// Note: for all setters and getters, it is assumed that the cache memory (heap) has already been allocated.
 //
 
 bool sky_ap_get_cache_key(uint32_t idx, char * key) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.num_entries || key == NULL) {
         return false;
     }
-    sky_copy_bytes(key, cache.entry[idx].key, cache.key_size);
+    memcpy(key, cache.entry[idx].key, cache.key_size);
     return true;
 }
 
@@ -41,7 +23,7 @@ bool sky_ap_set_cache_key(uint32_t idx, const char * key) {
     if (cache.type != DATA_TYPE_AP || idx >= cache.num_entries || key == NULL) {
         return false;
     }
-    sky_copy_bytes(cache.entry[idx].key, key, cache.key_size);
+    memcpy(cache.entry[idx].key, key, cache.key_size);
     return true;
 }
 
@@ -117,8 +99,6 @@ void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries) {
 void sky_cache_clear(enum SKY_DATA_TYPE type) {
     cache.type = DATA_TYPE_PAD;
     cache.num_entries = 0;
-    cache.key_size = 0;
-    cache.value_size = 0;
     cache.timestamp = 0;
 }
 
@@ -231,8 +211,8 @@ bool sky_cache_add(uint32_t idx, const char * key, const char * value) {
     if (idx >= cache.num_entries) {
         return false;
     }
-    sky_copy_bytes(cache.entry[idx].key, key, cache.key_size);
-    sky_copy_bytes(cache.entry[idx].value, value, cache.value_size);
+    memcpy(cache.entry[idx].key, key, cache.key_size);
+    memcpy(cache.entry[idx].value, value, cache.value_size);
     return true;
 }
 
@@ -313,11 +293,15 @@ void sky_cache_free() {
     for (; i<MAX_CACHE_ELEMENTS; ++i) {
         if (cache.entry[i].key != NULL) {
             free(cache.entry[i].key);
+            cache.entry[i].key = NULL;
         }
         if (cache.entry[i].value != NULL) {
             free(cache.entry[i].value);
+            cache.entry[i].value = NULL;
         }
     }
+    cache.key_size = 0;
+    cache.value_size = 0;
     cache.is_created = false;
 }
 
