@@ -8,7 +8,8 @@
 static sky_cache_t cache;
 
 //
-// Note: for all setters and getters, it is assumed that the cache memory (heap) has already been allocated.
+// Note: for all setters and getters, it is assumed that the cache memory
+// (heap) has already been allocated.
 //
 
 bool sky_ap_get_cache_key(uint32_t idx, char * key) {
@@ -45,6 +46,7 @@ bool sky_ap_set_cache_value(uint32_t idx, int8_t value) {
 
 /**
  * Compare the key in cache.
+ *
  * @param idx : index in cache to compare
  * @param key : the key to compare
  * @return true on equivalent; false on different.
@@ -64,6 +66,7 @@ bool sky_compare_cache_key(uint32_t idx, const char * key) {
 
 /**
  * Compare the value in cache.
+ *
  * @param idx : index in cache to compare
  * @param value : the value to compare
  * @return true on equivalent; false on different.
@@ -81,21 +84,12 @@ bool sky_compare_cache_value(uint32_t idx, const char * value) {
     return true;
 }
 
-/**
- * Initialize a cache.
- * @param type : cache data type
- * @param num_entries : the number of entries in cache
- */
 void sky_cache_init(enum SKY_DATA_TYPE type, uint32_t num_entries) {
     cache.type = type;
     cache.num_entries = num_entries;
     cache.timestamp = (uint32_t)time(NULL); // in seconds
 }
 
-/**
- * Reset a cache.
- * @param type : cache data type
- */
 void sky_cache_clear(enum SKY_DATA_TYPE type) {
     cache.type = DATA_TYPE_PAD;
     cache.num_entries = 0;
@@ -104,6 +98,7 @@ void sky_cache_clear(enum SKY_DATA_TYPE type) {
 
 /**
  * Save cache in file.
+ *
  * @param type : cache data type
  * @return true on success; false on failure.
  */
@@ -139,6 +134,7 @@ bool save_cache(enum SKY_DATA_TYPE type) {
 
 /**
  * Load file into cache.
+ *
  * @param type : cache data type
  * @return true on success; false on failure.
  */
@@ -171,10 +167,6 @@ bool load_cache(enum SKY_DATA_TYPE type) {
 #endif
 }
 
-/**
- * Check if cache is empty.
- * @return true on empty; false on not empty.
- */
 bool sky_is_cache_empty() {
     load_cache(DATA_TYPE_AP);
     if (cache.num_entries == 0) {
@@ -184,12 +176,6 @@ bool sky_is_cache_empty() {
     }
 }
 
-/**
- * Look up the key in cache.
- * @param key : the key to look up
- * @return the cache entry associated with the key on success;
- *         or NULL on failure.
- */
 cache_entry_t * sky_cache_lookup(const char *key) {
     uint32_t i = 0;
     for (; i<cache.num_entries; ++i) {
@@ -200,13 +186,6 @@ cache_entry_t * sky_cache_lookup(const char *key) {
     return NULL;
 }
 
-/**
- * Add key-value pairs into the cache.
- * @param idx : index in cache to add
- * @param key : key to add
- * @param value : value to add
- * @return true on success; false on failure.
- */
 bool sky_cache_add(uint32_t idx, const char * key, const char * value) {
     if (idx >= cache.num_entries) {
         return false;
@@ -216,12 +195,6 @@ bool sky_cache_add(uint32_t idx, const char * key, const char * value) {
     return true;
 }
 
-/**
- * Create and cache an array of APs.
- * Note: automatically truncate the APs more than MAX_CACHE_SIZE.
- * @param aps : array pointer of APs
- * @param aps_size : the size of the array of APs
- */
 void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size) {
     if (aps_size > MAX_CACHE_ELEMENTS) {
         aps_size = MAX_CACHE_ELEMENTS;
@@ -234,13 +207,6 @@ void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size) {
     save_cache(DATA_TYPE_AP);
 }
 
-/**
- * Check if the cache matching is satisfied.
- * @param aps : array pointer of APs
- * @param aps_size : the size of the array of APs
- * @param p : percentage to satisfy matching criteria
- * @return true on matching; false on not-matching.
- */
 bool sky_is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
     if (aps_size > MAX_CACHE_ELEMENTS) {
         aps_size = MAX_CACHE_ELEMENTS;
@@ -252,18 +218,12 @@ bool sky_is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) 
         }
     }
     if ((float)n/aps_size < p) {
-        return false; // not matching
+        return false; // doesn't match
     } else {
-        return true; // matching
+        return true;  // matches
     }
 }
 
-/**
- * Create cache with proper memory allocation.
- * @param key_size : the size of key in bytes
- * @param value_size : the size of value in bytes
- * @return true on success; false on failure.
- */
 bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
     if (cache.is_created) {
         return true;
@@ -285,9 +245,6 @@ bool sky_cache_create(uint32_t key_size, uint32_t value_size) {
     return true;
 }
 
-/**
- * Free cache with proper memory reclamation.
- */
 void sky_cache_free() {
     uint32_t i = 0;
     for (; i<MAX_CACHE_ELEMENTS; ++i) {
@@ -305,20 +262,12 @@ void sky_cache_free() {
     cache.is_created = false;
 }
 
-/**
- * Check if cache matching is satisfied.
- * If so, it is not necessary to query locations.
- * @param req : location request structure
- * @param type : cache data type
- * @param match_percentage : the percentage to satisfy matching criteria
- * @return true on matching; false on not matching.
- */
 bool sky_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage) {
     switch (type) {
     case DATA_TYPE_AP:
         if ((cache.num_entries < MIN_CACHE_APS)
                 || (time(NULL) - cache.timestamp > MAX_CACHE_TIME)) {
-            // clear cache if cache size is too small or cache timestamp is too long
+            // clear the cache if the set of cached scans is too small or too stale
             sky_cache_clear(type);
         }
         if (sky_is_cache_empty()) {
@@ -326,7 +275,7 @@ bool sky_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, 
             return false;
         } else {
             if (sky_is_ap_cache_match(req->aps, req->ap_count, match_percentage)) {
-                return true; // same location, no need to send out location request.
+                return true; // new scan is essentially the same as the previous scan
             } else {
                 sky_cache_clear(type);
                 sky_cache_aps(req->aps, req->ap_count);
