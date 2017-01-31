@@ -199,6 +199,10 @@ bool check_rq_max_counts(const struct location_rq_t * p_rq) {
         perror("Too big: cell_count > MAX_CELLS");
         return false;
     }
+    if (p_rq->gsm_count + p_rq->cdma_count + p_rq->umts_count + p_rq->lte_count > MAX_CELLS) {
+        perror("Too big: gsm_count + cdma_count + umts_count + lte_count > MAX_CELLS");
+        return false;
+    }
     if (p_rq->gps_count > MAX_GPSS) {
         perror("Too big: gps_count > MAX_GPSS");
         return false;
