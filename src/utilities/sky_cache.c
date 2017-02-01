@@ -150,11 +150,15 @@ bool load_cache(enum SKY_DATA_TYPE type) {
         if (!fp) {
             return false;
         }
-        fscanf(fp, "%d", &cache.num_entries);
+        if (fscanf(fp, "%d", &cache.num_entries) != 1) {
+            return false;
+        }
         uint32_t i = 0;
         for (; i<cache.num_entries; ++i) {
             char mac[cache.key_size * 2 + 1];
-            fscanf(fp, "%s %" SCNd8, mac, (int8_t *)cache.entry[i].value);
+            if (fscanf(fp, "%s %" SCNd8, mac, (int8_t *)cache.entry[i].value) != 2) {
+                return false;
+            }
             // SCNd8 - http://stackoverflow.com/questions/26618443/how-to-use-int16-t-or-int32-t-with-functions-like-scanf
             // fscanf uses white space to separate string.
             hex2bin(mac, sizeof(mac), (uint8_t *)cache.entry[i].key, cache.key_size);
