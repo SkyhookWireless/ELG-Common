@@ -215,6 +215,9 @@ void sky_cache_aps(const struct ap_t * aps, uint32_t aps_size) {
 }
 
 bool sky_is_ap_cache_match(const struct ap_t * aps, uint32_t aps_size, float p) {
+    if (aps_size == 0) {
+        return false;
+    }
     if (aps_size > MAX_CACHE_ELEMENTS) {
         aps_size = MAX_CACHE_ELEMENTS;
     }
