@@ -110,6 +110,7 @@ bool save_cache(enum SKY_DATA_TYPE type) {
         if (!fp) {
             return false;
         }
+        fprintf(fp, "%d\n", cache.timestamp);
         fprintf(fp, "%d\n", cache.num_entries);
         uint32_t i = 0;
         for (; i<cache.num_entries; ++i) {
@@ -146,6 +147,9 @@ bool load_cache(enum SKY_DATA_TYPE type) {
         if (!fp) {
             return false;
         }
+        if (fscanf(fp, "%d", &cache.timestamp) != 1) {
+            return false;
+        }
         if (fscanf(fp, "%d", &cache.num_entries) != 1) {
             return false;
         }
@@ -172,7 +176,6 @@ bool load_cache(enum SKY_DATA_TYPE type) {
 }
 
 bool sky_is_cache_empty() {
-    load_cache(DATA_TYPE_AP);
     if (cache.num_entries == 0) {
         return true;
     } else {
@@ -269,6 +272,7 @@ void sky_cache_free() {
 bool sky_cache_match(const struct location_rq_t * req, enum SKY_DATA_TYPE type, float match_percentage) {
     switch (type) {
     case DATA_TYPE_AP:
+        load_cache(type);
         if ((cache.num_entries < MIN_CACHE_APS)
                 || (time(NULL) - cache.timestamp > MAX_CACHE_TIME)) {
             // clear the cache if the set of cached scans is too small or too stale
