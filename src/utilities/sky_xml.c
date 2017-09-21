@@ -201,11 +201,11 @@ int32_t sky_encode_req_xml(char *buff, int32_t bufflen, const struct location_rq
         sz = strlen(cdma);
         strncpy(p, cdma, sz);
         p += sz;
+        p += sprintf(p, sid, creq->cdmas[i].sid);
+        p += sprintf(p, nid, creq->cdmas[i].nid);
+        p += sprintf(p, bsid, creq->cdmas[i].bsid);
         p += sprintf(p, cdma_lat, creq->cdmas[i].lat);
         p += sprintf(p, cdma_lon, creq->cdmas[i].lon);
-        p += sprintf(p, sid, creq->cdmas[i].sid);
-        p += sprintf(p, bsid, creq->cdmas[i].bsid);
-        p += sprintf(p, nid, creq->cdmas[i].nid);
         p += sprintf(p, rssi, creq->cdmas[i].rssi);
         p += sprintf(p, age, creq->cdmas[i].age);
         sz = strlen(cdma_eof);
