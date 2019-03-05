@@ -33,7 +33,7 @@ void sky_set_ap_band(struct ap_t* ap, enum SKY_BAND band) {
         ap->flag |= 1 << 2; // set bit 2
         break;
     default:
-        perror("undefined SKY_BAND");
+        puts("Error: Undefined SKY_BAND\n");
         break;
     }
 }
@@ -325,7 +325,8 @@ int32_t sky_decode_req_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
 
     if (creq->payload_ext.payload.type != LOCATION_RQ
             && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "Unknown payload type %d\n", creq->payload_ext.payload.type);
+        // fprintf(stderr, "Unknown payload type %d\n", creq->payload_ext.payload.type);
+        perror("Unknown payload type from client");
         return -1;
     }
 
@@ -618,7 +619,8 @@ int32_t sky_encode_req_bin(uint8_t *buff, uint32_t buff_len, struct location_rq_
 
     if (creq->payload_ext.payload.type != LOCATION_RQ
             && creq->payload_ext.payload.type != LOCATION_RQ_ADDR) {
-        fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_ext.payload.type);
+        // fprintf(stderr, "sky_encode_req_bin: unknown payload type %d\n", creq->payload_ext.payload.type);
+        puts("unknown payload type encoding request\n");
         return -1;
     }
 
@@ -860,7 +862,8 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case LOCATION_UNABLE_TO_DETERMINE:
             return 0; // success
         default:
-            fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
+            // fprintf(stderr, "Unknown payload type %d\n", cresp->payload_ext.payload.type);
+            puts("Error: Unknown payload type in response\n");
             return -1;
         }
     }
@@ -938,7 +941,7 @@ int32_t sky_decode_resp_bin(uint8_t *buff, uint32_t buff_len, uint32_t data_len,
         case DATA_TYPE_PAD:
             return 0; // success
         default:
-            perror("unknown data type");
+            puts("Error: Unknown data type\n");
             return -1;
         }
         payload_offset += sizeof(sky_entry_t) + p_entry_ex->entry->data_type_count;

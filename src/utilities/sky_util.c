@@ -136,6 +136,7 @@ uint64_t get_timestamp_ms() {
     return ts * 1000 + now.tv_usec / 1000;
 }
 
+#if 0
 int32_t get_http_timestamp(char *tbuf, uint32_t tbuf_len) {
     time_t now = time(0);
     struct tm tm = *gmtime(&now);
@@ -157,20 +158,25 @@ int32_t sprint_buff(uint8_t *hex_buff, uint32_t hex_buff_len, uint8_t *buff, uin
     *(p - 1) = '\0'; // overwrite the last space by \0.
     return (int32_t) (p - (char *)hex_buff);
 }
+#endif
 
 void print_buff(uint8_t *buff, uint32_t len) {
     uint32_t i;
     uint32_t j = 0;
+    const char * hex = "0123456789ABCDEF";
 
     for (i = 0; i < len; i++) {
-        printf("%02X ", buff[i]);
+        putchar(hex[ (buff[i] >> 4) & 0xf]);
+        putchar(hex[ buff[i] & 0xf]);
+        putchar(' ');
+        // printf("%02X ", buff[i]);
 
         if (++j > 15) {
             j = 0;
-            printf("\n");
+            putchar('\n');
         }
     }
-    printf("\n");
+    putchar('\n');
 }
 
 /* search buff for start and end tags
@@ -200,11 +206,12 @@ int32_t get_xval(char *buff, const char *start, const char *end, char **p) {
 void print_s(char *buff, int32_t len) {
     int32_t i;
     for (i = 0; i < len; i++) {
-        printf("%c", buff[i]);
+        putchar(buff[i]);
     }
-    printf("\n");
+    putchar('\n');
 }
 
+#if 1
 void print_ip(uint8_t *ip, uint8_t ip_type) {
     if (ip == NULL)
         return;
@@ -236,6 +243,7 @@ void print_ip(uint8_t *ip, uint8_t ip_type) {
     }
     printf("\n");
 }
+#endif
 
 uint16_t calc_checksum(uint8_t *buff, int32_t buff_len) {
     int32_t i;

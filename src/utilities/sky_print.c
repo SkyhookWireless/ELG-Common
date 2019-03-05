@@ -13,6 +13,29 @@
 #include "sky_util.h"
 #include "sky_print.h"
 
+static int puterr(char *msg)
+{
+    char *p;
+
+    for (p = msg; *p != '\n' && *p != '\0' && (p - msg) <= 80; p++)
+        putchar(*p);
+    return (p - msg);
+}
+
+/* print error msg preceeded by 'Error' with terminating newline (if necessary) */
+/* */
+int errmsg(char *msg)
+{
+    int n = 0;
+
+    if (msg == NULL)
+        return 0;
+    n += puterr("Error: ");
+    n += puterr(msg);
+    n += puterr("\n");
+    return n;
+}
+
 void print_location_rq(struct location_rsp_t* cr) {
     puts("LOCATION_RQ");
     printf("latitude: %f\n", cr->location.lat);
